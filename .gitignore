@@ -1,0 +1,30 @@
+# Development
+*.log
+*.swp
+*.swo
+*~
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+# Build artifacts
+dist/
+build/
+*.zip
+
+# Dependencies (if we add a build process later)
+node_modules/
+package-lock.json
+yarn.lock
+
+# Extension packaging
+*.crx
+*.xpi
+*.pem
+
+# Temporary files
+tmp/
+temp/
+
