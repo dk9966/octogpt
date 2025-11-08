@@ -28,6 +28,8 @@ class ChatGPTParser {
 
     /**
      * Get the current conversation ID from URL
+     * Uses regex, uses () for capture group, [] for character class, + for one or more
+     * / is just syntax, .match returns match[0] is the full match, match[1] is the first capture group, etc.
      */
     getConversationId() {
         const match = window.location.pathname.match(/\/c\/([a-zA-Z0-9-]+)/);
@@ -63,10 +65,11 @@ class ChatGPTParser {
 
         // Fallback to alternative selectors if primary fails
         if (userElements.length === 0) {
+            console.log('[OctoGPT] No user messages found with primary selector, trying fallback');
             userElements = this.findUserMessagesWithFallback();
         }
 
-        userElements.forEach((element, index) => {
+        userElements.forEach((element, index) => { // element is the DOM element
             const promptData = this.extractPromptData(element, index);
             if (promptData) {
                 messages.push(promptData);
@@ -82,8 +85,8 @@ class ChatGPTParser {
     findUserMessagesWithFallback() {
         const elements = [];
 
-        // Look for conversation turns and identify user vs assistant
-        const allTurns = document.querySelectorAll('[data-testid^="conversation-turn-"]');
+        // Look for conversation turns and identify user vs assistant 
+        const allTurns = document.querySelectorAll(this.selectors.messageGroups);
 
         allTurns.forEach(turn => {
             // User messages typically don't have the assistant avatar
