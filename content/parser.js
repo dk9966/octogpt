@@ -156,8 +156,8 @@ class ChatGPTParser {
             }
 
             // Check if this prompt has been edited
-            const isEdited = this.isPromptEdited(element);
             const branchInfo = this.getBranchInfo(element);
+            const isEdited = branchInfo.hasBranches;
 
             const promptData = {
                 id: this.generatePromptId(element, index),
@@ -220,26 +220,26 @@ class ChatGPTParser {
     }
 
     /**
-     * ERROR! doesn't work
+     * Deprecated doesn't work
      * Returns boolean if a prompt has been edited
      */
-    isPromptEdited(element) {
-        // Look for edit indicators in the element or nearby
-        const editButton = element.querySelector(this.selectors.editButton);
-        const parent = element.closest('[data-testid^="conversation-turn-"]');
+    // isPromptEdited(element) {
+    //     // Look for edit indicators in the element or nearby
+    //     const editButton = element.querySelector(this.selectors.editButton);
+    //     const parent = element.closest('[data-testid^="conversation-turn-"]');
 
-        if (parent) {
-            // Check for visual indicators of edits
-            const hasEditIndicator = parent.querySelector('[title*="edited" i], [aria-label*="edited" i]');
-            if (hasEditIndicator) return true;
-        }
+    //     if (parent) {
+    //         // Check for visual indicators of edits
+    //         const hasEditIndicator = parent.querySelector('[title*="edited" i], [aria-label*="edited" i]');
+    //         if (hasEditIndicator) return true;
+    //     }
 
-        // Check if there are multiple versions/branches visible
-        const hasBranchIndicator = element.closest('[class*="branch"]') ||
-            parent?.querySelector('[class*="branch"]');
+    //     // Check if there are multiple versions/branches visible
+    //     const hasBranchIndicator = element.closest('[class*="branch"]') ||
+    //         parent?.querySelector('[class*="branch"]');
 
-        return !!hasBranchIndicator;
-    }
+    //     return !!hasBranchIndicator;
+    // }
 
     /**
      * Get branch information for the current prompt DOM element
