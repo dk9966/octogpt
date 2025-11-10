@@ -30,6 +30,8 @@ class ChatGPTParser {
      * Get the current conversation ID from URL
      * Uses regex, uses () for capture group, [] for character class, + for one or more
      * / is just syntax, .match returns match[0] is the full match, match[1] is the first capture group, etc.
+     * window.location.pathname is like /c/1234567890
+     * match is like ["/c/1234567890", "1234567890"]
      */
     getConversationId() {
         const match = window.location.pathname.match(/\/c\/([a-zA-Z0-9-]+)/);
@@ -38,6 +40,8 @@ class ChatGPTParser {
 
     /**
      * Extract all user prompts from the current page
+     * Check if conversationId is valid
+     * and gets user messages
      */
     extractAllPrompts() {
         this.conversationId = this.getConversationId();
@@ -49,13 +53,14 @@ class ChatGPTParser {
         }
 
         const prompts = this.findUserMessages();
-        this.prompts = prompts;
+        this.prompts = prompts; // list of prompt objects
 
         return prompts;
     }
 
     /**
      * Find all user messages in the DOM
+     * gets all DOM elements and then parses DOM elements
      */
     findUserMessages() {
         const messages = [];
@@ -116,6 +121,7 @@ class ChatGPTParser {
     }
 
     /**
+     * Fallback stuff
      * Heuristic to identify if an element looks like a user message
      */
     looksLikeUserMessage(element) {
@@ -138,7 +144,7 @@ class ChatGPTParser {
     }
 
     /**
-     * Extract prompt data from a user message element
+     * Turns user message DOM element into prompt data object
      */
     extractPromptData(element, index) {
         try {
@@ -172,7 +178,7 @@ class ChatGPTParser {
     }
 
     /**
-     * Get the text content from a message element
+     * Get the text content from a message DOM element
      */
     getMessageText(element) {
         // Try different methods to get the text content
@@ -203,6 +209,7 @@ class ChatGPTParser {
 
     /**
      * Generate a preview (first ~12 characters) of the prompt
+     * trims text
      */
     generatePreview(text, maxLength = 12) {
         const cleaned = text.trim();
@@ -213,7 +220,8 @@ class ChatGPTParser {
     }
 
     /**
-     * Check if a prompt has been edited
+     * ERROR! doesn't work
+     * Returns boolean if a prompt has been edited
      */
     isPromptEdited(element) {
         // Look for edit indicators in the element or nearby
@@ -234,35 +242,44 @@ class ChatGPTParser {
     }
 
     /**
-     * Get branch information for the current prompt
+     * Get branch information for the current prompt DOM element
      */
     getBranchInfo(element) {
         const parent = element.closest('[data-testid^="conversation-turn-"]');
 
         if (!parent) return null;
 
-        // Look for branch navigation elements (prev/next branch buttons)
-        const branchNav = parent.querySelector('[class*="branch"], button[aria-label*="branch" i]');
+        // Look for branch navigation elements
+        // ChatGPT shows "Previous response" / "Next response" buttons with a counter like "3/3"
+        const prevButton = parent.querySelector('button[aria-label*="Previous response" i]');
+        const nextButton = parent.querySelector('button[aria-label*="Next response" i]');
 
-        if (!branchNav) return null;
+        if (!prevButton && !nextButton) return { hasBranches: false };
 
-        // Try to extract branch position info
-        // ChatGPT typically shows something like "1 / 3" for branches
-        const branchText = branchNav.textContent;
+        // Find the container with both buttons to get the branch counter
+        const navContainer = prevButton?.parentElement || nextButton?.parentElement;
+
+        if (!navContainer) return { hasBranches: true, hasNavContainer: false };
+
+        // Try to extract branch position info from the counter text
+        // ChatGPT typically shows something like "3/3" for branches
+        const branchText = navContainer.textContent;
         const match = branchText.match(/(\d+)\s*\/\s*(\d+)/);
 
         if (match) {
             return {
+                hasBranches: true,
                 current: parseInt(match[1]),
                 total: parseInt(match[2]),
             };
         }
 
-        return { hasBranches: true };
+        return { hasBranches: true, hasMatch: false };
     }
 
     /**
-     * Generate a unique ID for a prompt
+     * Generate a unique ID for a prompt given DOM element
+     * 
      */
     generatePromptId(element, index) {
         // Use data attributes if available
