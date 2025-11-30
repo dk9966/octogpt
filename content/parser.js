@@ -157,7 +157,7 @@ class ChatGPTParser {
 
             // Check if this prompt has been edited
             const branchInfo = this.getBranchInfo(element);
-            const isEdited = branchInfo.hasBranches;
+            const isEdited = branchInfo?.hasBranches ?? false;
 
             const promptData = {
                 id: this.generatePromptId(element, index),
@@ -338,6 +338,7 @@ class ChatGPTParser {
                 id: prompt.id,
                 display: displayText,
                 text: prompt.text,
+                timestamp: prompt.timestamp,
                 isEdited: prompt.isEdited,
                 isBranchPoint: prompt.isBranchPoint,
                 inBranch: prompt.inBranch,

@@ -18,6 +18,7 @@
             ],
             "js": [
                 "content/parser.js",
+                "content/sidebar.js",
                 "content/content.js"
             ],
             "css": [

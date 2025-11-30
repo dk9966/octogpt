@@ -6,6 +6,7 @@
 class OctoGPT {
   constructor() {
     this.parser = new ChatGPTParser();
+    this.sidebar = null;
     this.observer = null;
     this.prompts = [];
     this.isInitialized = false;
@@ -38,8 +39,14 @@ class OctoGPT {
   /**
    * Setup the extension after page is ready
    */
-  setup() {
+  async setup() {
     console.log('[OctoGPT] Setting up...');
+
+    // Initialize sidebar
+    if (window.OctoGPTSidebar) {
+      this.sidebar = new OctoGPTSidebar();
+      await this.sidebar.init();
+    }
 
     // Initial extraction
     this.extractAndLog();
@@ -73,6 +80,11 @@ class OctoGPT {
     const formattedPrompts = this.parser.formatPromptsForDisplay();
 
     this.prompts = formattedPrompts;
+
+    // Update sidebar with new prompts
+    if (this.sidebar) {
+      this.sidebar.updatePrompts(formattedPrompts);
+    }
 
     // Log results for Phase 1 validation
     console.log(`[OctoGPT] Found ${formattedPrompts.length} prompts`);
@@ -255,6 +267,11 @@ class OctoGPT {
     if (this.observer) {
       this.observer.disconnect();
       this.observer = null;
+    }
+
+    if (this.sidebar) {
+      this.sidebar.destroy();
+      this.sidebar = null;
     }
 
     clearTimeout(this.debounceTimer);

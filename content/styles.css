@@ -1,7 +1,375 @@
 /**
  * OctoGPT Styles
- * Placeholder for Phase 2 - currently empty as Phase 1 only does extraction
+ * Sidebar styling with BEM naming convention
  */
 
-/* Phase 1: No UI elements yet, just extraction and logging */
+/* Sidebar container - positioned fixed on the right, pushes content */
+.octogpt-sidebar {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 200px;
+    height: 100vh;
+    z-index: 1000;
+    transform: translateX(100%);
+    transition: transform 0.3s ease-in-out;
+    pointer-events: none;
+}
 
+.octogpt-sidebar--visible {
+    transform: translateX(0);
+    pointer-events: auto;
+}
+
+/* Push ChatGPT's content to the left when sidebar is visible */
+/* Use body padding-right to push everything left without breaking internal layout */
+body:has(.octogpt-sidebar--visible) {
+    padding-right: 200px;
+    transition: padding-right 0.3s ease-in-out;
+    box-sizing: border-box;
+}
+
+/* Toggle button - floating button to open sidebar */
+.octogpt-toggle {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: #ffffff;
+    border: 1px solid #e5e5e5;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    cursor: pointer;
+    z-index: 9998;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    color: #374151;
+    transition: all 0.2s;
+}
+
+.octogpt-toggle:hover {
+    background: #f9fafb;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    transform: scale(1.05);
+}
+
+.octogpt-toggle:active {
+    transform: scale(0.95);
+}
+
+@media (prefers-color-scheme: dark) {
+    .octogpt-toggle {
+        background: #212121;
+        border-color: #3a3a3a;
+        color: #e5e5e5;
+    }
+
+    .octogpt-toggle:hover {
+        background: #2a2a2a;
+    }
+}
+
+/* Hide toggle when sidebar is visible */
+.octogpt-sidebar--visible~.octogpt-toggle,
+body:has(.octogpt-sidebar--visible) .octogpt-toggle {
+    display: none;
+}
+
+/* Shadow DOM styles - injected into shadow root */
+.octogpt-sidebar__container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: #ffffff;
+    border-left: 1px solid #e5e5e5;
+    box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 14px;
+    color: #374151;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    .octogpt-sidebar__container {
+        background: #212121;
+        border-left-color: #3a3a3a;
+        color: #e5e5e5;
+    }
+}
+
+.octogpt-sidebar__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid #e5e5e5;
+    background: #f9fafb;
+}
+
+@media (prefers-color-scheme: dark) {
+    .octogpt-sidebar__header {
+        border-bottom-color: #3a3a3a;
+        background: #2a2a2a;
+    }
+}
+
+.octogpt-sidebar__logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    font-size: 15px;
+    color: #111827;
+}
+
+@media (prefers-color-scheme: dark) {
+    .octogpt-sidebar__logo {
+        color: #f9fafb;
+    }
+}
+
+.octogpt-sidebar__logo-icon {
+    font-size: 18px;
+    line-height: 1;
+}
+
+.octogpt-sidebar__logo-text {
+    letter-spacing: -0.3px;
+}
+
+.octogpt-sidebar__close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    line-height: 1;
+    color: #6b7280;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.octogpt-sidebar__close:hover {
+    background: #e5e7eb;
+    color: #111827;
+}
+
+@media (prefers-color-scheme: dark) {
+    .octogpt-sidebar__close {
+        color: #9ca3af;
+    }
+
+    .octogpt-sidebar__close:hover {
+        background: #3a3a3a;
+        color: #f9fafb;
+    }
+}
+
+.octogpt-sidebar__search {
+    padding: 12px 16px;
+    border-bottom: 1px solid #e5e5e5;
+}
+
+@media (prefers-color-scheme: dark) {
+    .octogpt-sidebar__search {
+        border-bottom-color: #3a3a3a;
+    }
+}
+
+.octogpt-sidebar__search-input {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 13px;
+    background: #ffffff;
+    color: #111827;
+    transition: border-color 0.2s;
+}
+
+.octogpt-sidebar__search-input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+@media (prefers-color-scheme: dark) {
+    .octogpt-sidebar__search-input {
+        background: #2a2a2a;
+        border-color: #4a4a4a;
+        color: #e5e5e5;
+    }
+
+    .octogpt-sidebar__search-input:focus {
+        border-color: #60a5fa;
+        box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2);
+    }
+}
+
+.octogpt-sidebar__content {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+/* Custom scrollbar */
+.octogpt-sidebar__content::-webkit-scrollbar {
+    width: 6px;
+}
+
+.octogpt-sidebar__content::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.octogpt-sidebar__content::-webkit-scrollbar-thumb {
+    background: #d1d5db;
+    border-radius: 3px;
+}
+
+.octogpt-sidebar__content::-webkit-scrollbar-thumb:hover {
+    background: #9ca3af;
+}
+
+@media (prefers-color-scheme: dark) {
+    .octogpt-sidebar__content::-webkit-scrollbar-thumb {
+        background: #4a4a4a;
+    }
+
+    .octogpt-sidebar__content::-webkit-scrollbar-thumb:hover {
+        background: #6a6a6a;
+    }
+}
+
+.octogpt-sidebar__prompt-list {
+    padding: 8px 0;
+}
+
+.octogpt-sidebar__prompt-item {
+    padding: 10px 16px;
+    cursor: pointer;
+    transition: background-color 0.15s;
+    border-left: 3px solid transparent;
+}
+
+.octogpt-sidebar__prompt-item:hover {
+    background: #f3f4f6;
+}
+
+.octogpt-sidebar__prompt-item--active {
+    background: #eff6ff;
+    border-left-color: #3b82f6;
+}
+
+@media (prefers-color-scheme: dark) {
+    .octogpt-sidebar__prompt-item:hover {
+        background: #2a2a2a;
+    }
+
+    .octogpt-sidebar__prompt-item--active {
+        background: #1e3a5f;
+        border-left-color: #60a5fa;
+    }
+}
+
+.octogpt-sidebar__prompt-text {
+    font-size: 13px;
+    line-height: 1.5;
+    color: #111827;
+    margin-bottom: 4px;
+    word-break: break-word;
+}
+
+@media (prefers-color-scheme: dark) {
+    .octogpt-sidebar__prompt-text {
+        color: #e5e5e5;
+    }
+}
+
+.octogpt-sidebar__prompt-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    color: #6b7280;
+}
+
+@media (prefers-color-scheme: dark) {
+    .octogpt-sidebar__prompt-meta {
+        color: #9ca3af;
+    }
+}
+
+.octogpt-sidebar__prompt-timestamp {
+    font-size: 11px;
+}
+
+.octogpt-sidebar__prompt-branch {
+    padding: 2px 6px;
+    background: #dbeafe;
+    color: #1e40af;
+    border-radius: 3px;
+    font-size: 10px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+@media (prefers-color-scheme: dark) {
+    .octogpt-sidebar__prompt-branch {
+        background: #1e3a5f;
+        color: #93c5fd;
+    }
+}
+
+.octogpt-sidebar__empty {
+    padding: 32px 16px;
+    text-align: center;
+    color: #9ca3af;
+    font-size: 13px;
+    display: none;
+}
+
+@media (prefers-color-scheme: dark) {
+    .octogpt-sidebar__empty {
+        color: #6b7280;
+    }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .octogpt-sidebar {
+        width: 180px;
+    }
+
+    body:has(.octogpt-sidebar--visible) {
+        padding-right: 180px;
+    }
+
+    .octogpt-toggle {
+        bottom: 16px;
+        right: 16px;
+        width: 44px;
+        height: 44px;
+    }
+}
+
+/* Ensure sidebar doesn't break ChatGPT's layout on smaller screens */
+@media (max-width: 1024px) {
+    .octogpt-sidebar {
+        box-shadow: -4px 0 12px rgba(0, 0, 0, 0.15);
+    }
+}
+
+/* Prevent sidebar from interfering with ChatGPT's main content */
+.octogpt-sidebar {
+    isolation: isolate;
+}
+
+/* Ensure ChatGPT's main content remains accessible */
+main {
+    position: relative;
+    z-index: 1;
+}

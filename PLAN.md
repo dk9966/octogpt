@@ -228,7 +228,7 @@ The angle bracket notation `< >` indicates the edited prompt that created the cu
 ## Milestone Checklist
 
 - [x] Phase 1: Core extraction working ✓
-- [ ] Phase 2: Basic sidebar functional
+- [x] Phase 2: Basic sidebar functional ✓
 - [ ] Phase 3: Navigation implemented
 - [ ] Phase 4: Enhanced features added
 - [ ] Phase 5: Multi-chat support
