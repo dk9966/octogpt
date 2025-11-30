@@ -154,7 +154,6 @@ class OctoGPTSidebar {
         height: 100%;
         background: #ffffff;
         border-left: 1px solid rgba(0, 0, 0, 0.06);
-        box-shadow: -4px 0 24px rgba(0, 0, 0, 0.08);
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
         font-size: 14px;
         color: #374151;

@@ -85,7 +85,6 @@ body:has(.octogpt-sidebar--visible) .octogpt-toggle {
     height: 100%;
     background: #ffffff;
     border-left: 1px solid #e5e5e5;
-    box-shadow: -2px 0 8px rgba(0, 0, 0, 0.1);
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     font-size: 14px;
     color: #374151;
@@ -359,7 +358,7 @@ body:has(.octogpt-sidebar--visible) .octogpt-toggle {
 /* Ensure sidebar doesn't break ChatGPT's layout on smaller screens */
 @media (max-width: 1024px) {
     .octogpt-sidebar {
-        box-shadow: -4px 0 12px rgba(0, 0, 0, 0.15);
+        /* Shadow removed */
     }
 }
 
