@@ -464,6 +464,28 @@ class OctoGPTSidebar {
   }
 
   /**
+   * Calculate max characters for preview based on sidebar width
+   * Accounts for padding and average character width at 13px font
+   */
+  getPreviewMaxLength() {
+    const width = this.config.defaultWidth;
+    const horizontalPadding = 40; // content + item padding
+    const avgCharWidth = 7; // approximate width per character at 13px
+    return Math.floor((width - horizontalPadding) / avgCharWidth);
+  }
+
+  /**
+   * Truncate text to fit sidebar width
+   */
+  truncateText(text, maxLength) {
+    const cleaned = text.trim();
+    if (cleaned.length <= maxLength) {
+      return cleaned;
+    }
+    return cleaned.substring(0, maxLength) + '...';
+  }
+
+  /**
    * Create a prompt list item element
    */
   createPromptItem(prompt, index) {
@@ -480,8 +502,15 @@ class OctoGPTSidebar {
 
     item.className = `octogpt-sidebar__prompt-item ${activeClass}`;
 
+    // Calculate display text based on current sidebar width
+    const maxLength = this.getPreviewMaxLength();
+    let displayText = this.truncateText(prompt.text, maxLength);
+    if (prompt.isBranchPoint) {
+      displayText = `< ${displayText} >`;
+    }
+
     item.innerHTML = `
-      <div class="octogpt-sidebar__prompt-text">${this.escapeHtml(prompt.display)}</div>
+      <div class="octogpt-sidebar__prompt-text">${this.escapeHtml(displayText)}</div>
       ${prompt.isBranchPoint ? '<div class="octogpt-sidebar__prompt-meta"><span class="octogpt-sidebar__prompt-branch">branch</span></div>' : ''}
     `;
 
