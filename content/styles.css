@@ -12,7 +12,7 @@
     height: 100vh;
     z-index: 1000;
     transform: translateX(100%);
-    transition: transform 0.3s ease-in-out;
+    transition: transform 0.3s ease-in-out, width 0s;
     pointer-events: none;
     isolation: isolate;
 }
@@ -23,10 +23,8 @@
 }
 
 /* Push ChatGPT's content to the left when sidebar is visible */
-/* Use body padding-right to push everything left without breaking internal layout */
+/* Body padding is controlled by JavaScript for dynamic width */
 body:has(.octogpt-sidebar--visible) {
-    padding-right: 200px;
-    transition: padding-right 0.3s ease-in-out;
     box-sizing: border-box;
 }
 
@@ -81,14 +79,6 @@ body:has(.octogpt-sidebar--visible) .octogpt-toggle {
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
-    .octogpt-sidebar {
-        width: 180px;
-    }
-
-    body:has(.octogpt-sidebar--visible) {
-        padding-right: 180px;
-    }
-
     .octogpt-toggle {
         bottom: 16px;
         right: 16px;

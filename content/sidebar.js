@@ -16,10 +16,16 @@ class OctoGPTSidebar {
       maxWidth: 400,
     };
 
+    // Resize state
+    this.isResizing = false;
+
     // Bind methods
     this.toggle = this.toggle.bind(this);
     this.handleKeyDown = this.handleKeyDown.bind(this);
     this.render = this.render.bind(this);
+    this.handleResizeStart = this.handleResizeStart.bind(this);
+    this.handleResizeMove = this.handleResizeMove.bind(this);
+    this.handleResizeEnd = this.handleResizeEnd.bind(this);
   }
 
   /**
@@ -46,17 +52,11 @@ class OctoGPTSidebar {
     try {
       const result = await chrome.storage.local.get(['sidebarVisible', 'sidebarWidth']);
       this.isVisible = result.sidebarVisible !== undefined ? result.sidebarVisible : false;
-      // Only use saved width if it matches the current CSS sidebar width (200px)
-      // This prevents mismatch between CSS sidebar width and JavaScript padding
-      if (result.sidebarWidth && result.sidebarWidth === 200) {
+      // Use saved width if within valid range
+      if (result.sidebarWidth && 
+          result.sidebarWidth >= this.config.minWidth && 
+          result.sidebarWidth <= this.config.maxWidth) {
         this.config.defaultWidth = result.sidebarWidth;
-      } else {
-        // Reset to match CSS sidebar width (200px)
-        this.config.defaultWidth = 200;
-        // Clear any old saved width that doesn't match
-        if (result.sidebarWidth && result.sidebarWidth !== 200) {
-          await chrome.storage.local.set({ sidebarWidth: 200 });
-        }
       }
     } catch (error) {
       console.error('[OctoGPT] Error loading sidebar state:', error);
@@ -96,6 +96,7 @@ class OctoGPTSidebar {
 
     // Create HTML structure
     const html = `
+      <div class="octogpt-sidebar__resize-handle" aria-label="Resize sidebar"></div>
       <div class="octogpt-sidebar__container">
         <div class="octogpt-sidebar__header">
           <div class="octogpt-sidebar__logo">
@@ -135,7 +136,7 @@ class OctoGPTSidebar {
     const toggle = document.createElement('button');
     toggle.className = 'octogpt-toggle';
     toggle.setAttribute('aria-label', 'Toggle OctoGPT sidebar');
-    toggle.setAttribute('title', 'Toggle OctoGPT sidebar (Cmd/Ctrl + K)');
+    toggle.setAttribute('title', 'Toggle OctoGPT sidebar (Cmd/Ctrl + Shift + K)');
     toggle.innerHTML = '≡';
     toggle.addEventListener('click', () => this.toggle());
     document.body.appendChild(toggle);
@@ -148,6 +149,43 @@ class OctoGPTSidebar {
   injectStyles() {
     const style = document.createElement('style');
     style.textContent = `
+      :host {
+        display: block;
+        position: relative;
+        height: 100%;
+      }
+
+      .octogpt-sidebar__resize-handle {
+        position: absolute;
+        left: 4px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 4px;
+        height: 40px;
+        cursor: ew-resize;
+        background: rgba(0, 0, 0, 0.15);
+        border-radius: 2px;
+        z-index: 10;
+        transition: background 0.15s ease, height 0.15s ease;
+      }
+
+      .octogpt-sidebar__resize-handle:hover,
+      .octogpt-sidebar__resize-handle--active {
+        background: rgba(0, 0, 0, 0.3);
+        height: 56px;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .octogpt-sidebar__resize-handle {
+          background: rgba(255, 255, 255, 0.2);
+        }
+
+        .octogpt-sidebar__resize-handle:hover,
+        .octogpt-sidebar__resize-handle--active {
+          background: rgba(255, 255, 255, 0.4);
+        }
+      }
+
       .octogpt-sidebar__container {
         display: flex;
         flex-direction: column;
@@ -340,6 +378,82 @@ class OctoGPTSidebar {
         }
       });
     }
+
+    // Resize handle
+    const resizeHandle = this.shadowRoot.querySelector('.octogpt-sidebar__resize-handle');
+    if (resizeHandle) {
+      resizeHandle.addEventListener('mousedown', this.handleResizeStart);
+    }
+  }
+
+  /**
+   * Start resizing the sidebar
+   */
+  handleResizeStart(e) {
+    e.preventDefault();
+    this.isResizing = true;
+
+    const resizeHandle = this.shadowRoot.querySelector('.octogpt-sidebar__resize-handle');
+    if (resizeHandle) {
+      resizeHandle.classList.add('octogpt-sidebar__resize-handle--active');
+    }
+
+    // Add listeners to document for drag
+    document.addEventListener('mousemove', this.handleResizeMove);
+    document.addEventListener('mouseup', this.handleResizeEnd);
+
+    // Prevent text selection during drag
+    document.body.style.userSelect = 'none';
+    document.body.style.cursor = 'ew-resize';
+  }
+
+  /**
+   * Handle resize drag movement
+   */
+  handleResizeMove(e) {
+    if (!this.isResizing) return;
+
+    // Calculate new width from right edge of viewport
+    const newWidth = window.innerWidth - e.clientX;
+    
+    // Clamp to min/max
+    const clampedWidth = Math.max(
+      this.config.minWidth,
+      Math.min(this.config.maxWidth, newWidth)
+    );
+
+    // Update width
+    this.config.defaultWidth = clampedWidth;
+    this.sidebar.style.width = `${clampedWidth}px`;
+    document.body.style.paddingRight = `${clampedWidth}px`;
+  }
+
+  /**
+   * End resizing
+   */
+  async handleResizeEnd() {
+    if (!this.isResizing) return;
+
+    this.isResizing = false;
+
+    const resizeHandle = this.shadowRoot.querySelector('.octogpt-sidebar__resize-handle');
+    if (resizeHandle) {
+      resizeHandle.classList.remove('octogpt-sidebar__resize-handle--active');
+    }
+
+    // Remove document listeners
+    document.removeEventListener('mousemove', this.handleResizeMove);
+    document.removeEventListener('mouseup', this.handleResizeEnd);
+
+    // Restore selection and cursor
+    document.body.style.userSelect = '';
+    document.body.style.cursor = '';
+
+    // Re-render prompts with new width-based truncation
+    this.render();
+
+    // Save new width
+    await this.saveState();
   }
 
   /**
@@ -353,8 +467,8 @@ class OctoGPTSidebar {
    * Handle keyboard shortcuts
    */
   handleKeyDown(event) {
-    // Cmd/Ctrl + K to toggle sidebar
-    if ((event.metaKey || event.ctrlKey) && event.key === 'k') {
+    // Cmd/Ctrl + Shift + K to toggle sidebar
+    if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key === 'K') {
       // Don't trigger if user is typing in an input
       if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
         return;
@@ -557,6 +671,8 @@ class OctoGPTSidebar {
    */
   destroy() {
     document.removeEventListener('keydown', this.handleKeyDown);
+    document.removeEventListener('mousemove', this.handleResizeMove);
+    document.removeEventListener('mouseup', this.handleResizeEnd);
     if (this.sidebar && this.sidebar.parentNode) {
       this.sidebar.parentNode.removeChild(this.sidebar);
     }
