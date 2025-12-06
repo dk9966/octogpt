@@ -136,7 +136,7 @@ class OctoGPTSidebar {
     const toggle = document.createElement('button');
     toggle.className = 'octogpt-toggle';
     toggle.setAttribute('aria-label', 'Toggle OctoGPT sidebar');
-    toggle.setAttribute('title', 'Toggle OctoGPT sidebar (Cmd/Ctrl + Shift + K)');
+    toggle.setAttribute('title', 'Toggle OctoGPT sidebar (Cmd/Ctrl + Shift + P)');
     toggle.innerHTML = '≡';
     toggle.addEventListener('click', () => this.toggle());
     document.body.appendChild(toggle);
@@ -467,8 +467,8 @@ class OctoGPTSidebar {
    * Handle keyboard shortcuts
    */
   handleKeyDown(event) {
-    // Cmd/Ctrl + Shift + K to toggle sidebar
-    if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key === 'K') {
+    // Cmd/Ctrl + Shift + P to toggle sidebar
+    if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key === 'P') {
       // Don't trigger if user is typing in an input
       if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
         return;
