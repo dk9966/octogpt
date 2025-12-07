@@ -23,15 +23,27 @@
 }
 
 /* Push ChatGPT's content to the left when sidebar is visible */
-/* Body padding is controlled by JavaScript for dynamic width */
+/* Layout adjustments are controlled by JavaScript for dynamic width */
 body:has(.octogpt-sidebar--visible) {
     box-sizing: border-box;
+}
+
+/* Constrain wide content (tables, code blocks) when sidebar is visible */
+body:has(.octogpt-sidebar--visible) main table,
+body:has(.octogpt-sidebar--visible) main pre,
+body:has(.octogpt-sidebar--visible) main [class*="overflow"] {
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+body:has(.octogpt-sidebar--visible) main {
+    overflow-x: hidden;
 }
 
 /* Toggle button - floating button to open sidebar */
 .octogpt-toggle {
     position: fixed;
-    bottom: 24px;
+    top: 24px;
     right: 24px;
     width: 48px;
     height: 48px;

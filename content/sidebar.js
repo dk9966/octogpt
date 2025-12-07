@@ -91,10 +91,7 @@ class OctoGPTSidebar {
     // Create shadow root for style isolation
     this.shadowRoot = this.sidebar.attachShadow({ mode: 'open' });
 
-    // Inject styles
-    this.injectStyles();
-
-    // Create HTML structure
+    // Create HTML structure first
     const html = `
       <div class="octogpt-sidebar__resize-handle" aria-label="Resize sidebar"></div>
       <div class="octogpt-sidebar__container">
@@ -115,6 +112,9 @@ class OctoGPTSidebar {
     `;
 
     this.shadowRoot.innerHTML = html;
+
+    // Inject styles after HTML so they don't get overwritten
+    this.injectStyles();
 
     // Attach event listeners
     this.attachEventListeners();
@@ -427,7 +427,9 @@ class OctoGPTSidebar {
     // Update width
     this.config.defaultWidth = clampedWidth;
     this.sidebar.style.width = `${clampedWidth}px`;
-    document.body.style.paddingRight = `${clampedWidth}px`;
+    
+    // Adjust ChatGPT layout without animation during drag
+    this.adjustChatGPTLayout(clampedWidth, false);
   }
 
   /**
@@ -513,6 +515,28 @@ class OctoGPTSidebar {
   }
 
   /**
+   * Adjust ChatGPT layout elements to accommodate sidebar
+   */
+  adjustChatGPTLayout(width, animate = true) {
+    // Find the outermost content container - the parent of main
+    // This typically contains both the header and main content
+    const main = document.querySelector('main');
+    const container = main?.parentElement;
+    
+    if (!container) return;
+
+    const transition = animate ? 'margin-right 0.3s ease-in-out' : 'none';
+
+    if (width > 0) {
+      container.style.marginRight = `${width}px`;
+      container.style.transition = transition;
+    } else {
+      container.style.marginRight = '';
+      container.style.transition = '';
+    }
+  }
+
+  /**
    * Update sidebar visibility and adjust layout
    */
   updateVisibility() {
@@ -528,18 +552,13 @@ class OctoGPTSidebar {
       if (this.toggleButton) {
         this.toggleButton.style.display = 'none';
       }
-      // Push content using body padding (non-invasive approach)
-      // Use the same width value to ensure they match
-      document.body.style.paddingRight = `${sidebarWidth}px`;
-      document.body.style.transition = 'padding-right 0.3s ease-in-out';
+      this.adjustChatGPTLayout(sidebarWidth, true);
     } else {
       this.sidebar.classList.remove('octogpt-sidebar--visible');
       if (this.toggleButton) {
         this.toggleButton.style.display = 'flex';
       }
-      // Restore body padding
-      document.body.style.paddingRight = '';
-      document.body.style.transition = '';
+      this.adjustChatGPTLayout(0, false);
     }
   }
 
