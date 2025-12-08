@@ -157,32 +157,24 @@ class OctoGPTSidebar {
 
       .octogpt-sidebar__resize-handle {
         position: absolute;
-        left: 4px;
-        top: 50%;
-        transform: translateY(-50%);
+        left: 0;
+        top: 0;
         width: 4px;
-        height: 40px;
+        height: 100%;
         cursor: ew-resize;
-        background: rgba(0, 0, 0, 0.15);
-        border-radius: 2px;
+        background: transparent;
         z-index: 10;
-        transition: background 0.15s ease, height 0.15s ease;
       }
 
       .octogpt-sidebar__resize-handle:hover,
       .octogpt-sidebar__resize-handle--active {
-        background: rgba(0, 0, 0, 0.3);
-        height: 56px;
+        background: rgba(0, 0, 0, 0.08);
       }
 
       @media (prefers-color-scheme: dark) {
-        .octogpt-sidebar__resize-handle {
-          background: rgba(255, 255, 255, 0.2);
-        }
-
         .octogpt-sidebar__resize-handle:hover,
         .octogpt-sidebar__resize-handle--active {
-          background: rgba(255, 255, 255, 0.4);
+          background: rgba(255, 255, 255, 0.1);
         }
       }
 
