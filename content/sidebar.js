@@ -7,7 +7,9 @@ class OctoGPTSidebar {
   constructor() {
     this.sidebar = null;
     this.shadowRoot = null;
+    this.slab = null;
     this.isVisible = false;
+    this.isPinned = false;
     this.prompts = [];
     this.currentPromptIndex = -1;
     this.config = {
@@ -19,6 +21,10 @@ class OctoGPTSidebar {
     // Resize state
     this.isResizing = false;
 
+    // Hover state for unpinned mode
+    this.isHovering = false;
+    this.hideTimeout = null;
+
     // Bind methods
     this.toggle = this.toggle.bind(this);
     this.handleKeyDown = this.handleKeyDown.bind(this);
@@ -26,6 +32,10 @@ class OctoGPTSidebar {
     this.handleResizeStart = this.handleResizeStart.bind(this);
     this.handleResizeMove = this.handleResizeMove.bind(this);
     this.handleResizeEnd = this.handleResizeEnd.bind(this);
+    this.handleSlabMouseEnter = this.handleSlabMouseEnter.bind(this);
+    this.handleSidebarMouseEnter = this.handleSidebarMouseEnter.bind(this);
+    this.handleSidebarMouseLeave = this.handleSidebarMouseLeave.bind(this);
+    this.handleSidebarTransitionEnd = this.handleSidebarTransitionEnd.bind(this);
   }
 
   /**
@@ -50,8 +60,10 @@ class OctoGPTSidebar {
    */
   async loadState() {
     try {
-      const result = await chrome.storage.local.get(['sidebarVisible', 'sidebarWidth']);
-      this.isVisible = result.sidebarVisible !== undefined ? result.sidebarVisible : false;
+      const result = await chrome.storage.local.get(['sidebarPinned', 'sidebarWidth']);
+      this.isPinned = result.sidebarPinned !== undefined ? result.sidebarPinned : false;
+      // If pinned, start visible; otherwise start hidden
+      this.isVisible = this.isPinned;
       // Use saved width if within valid range
       if (result.sidebarWidth && 
           result.sidebarWidth >= this.config.minWidth && 
@@ -60,6 +72,7 @@ class OctoGPTSidebar {
       }
     } catch (error) {
       console.error('[OctoGPT] Error loading sidebar state:', error);
+      this.isPinned = false;
       this.isVisible = false;
       this.config.defaultWidth = 200;
     }
@@ -71,7 +84,7 @@ class OctoGPTSidebar {
   async saveState() {
     try {
       await chrome.storage.local.set({
-        sidebarVisible: this.isVisible,
+        sidebarPinned: this.isPinned,
         sidebarWidth: this.config.defaultWidth,
       });
     } catch (error) {
@@ -99,6 +112,11 @@ class OctoGPTSidebar {
           <div class="octogpt-sidebar__logo">
             <span class="octogpt-sidebar__logo-text">OctoGPT</span>
           </div>
+          <button class="octogpt-sidebar__pin-btn" aria-label="Pin sidebar" title="Pin sidebar">
+            <svg class="octogpt-sidebar__pin-icon" viewBox="0 0 16 16" width="14" height="14">
+              <path fill="currentColor" d="M9.828.722a.5.5 0 0 1 .354.146l4.95 4.95a.5.5 0 0 1 0 .707c-.48.48-1.072.588-1.503.588-.177 0-.335-.018-.46-.039l-3.134 3.134a5.927 5.927 0 0 1 .16 1.013c.046.702-.032 1.687-.72 2.375a.5.5 0 0 1-.707 0l-2.829-2.828-3.182 3.182a.5.5 0 0 1-.707 0 .5.5 0 0 1 0-.707l3.182-3.182-2.828-2.829a.5.5 0 0 1 0-.707c.688-.688 1.673-.767 2.375-.72a5.922 5.922 0 0 1 1.013.16l3.134-3.133a2.772 2.772 0 0 1-.04-.461c0-.43.108-1.022.589-1.503a.5.5 0 0 1 .353-.146z"/>
+            </svg>
+          </button>
         </div>
         <div class="octogpt-sidebar__content">
           <div class="octogpt-sidebar__prompt-list" role="list">
@@ -122,25 +140,26 @@ class OctoGPTSidebar {
     // Append to body
     document.body.appendChild(this.sidebar);
 
-    // Create toggle button
-    this.createToggleButton();
+    // Create hover slab
+    this.createSlab();
 
     // Set initial visibility
     this.updateVisibility();
+
+    // Initialize slab visibility (separate from updateVisibility for timing)
+    this.initSlabVisibility();
   }
 
   /**
-   * Create floating toggle button
+   * Create the hover slab that triggers sidebar on mouseenter
    */
-  createToggleButton() {
-    const toggle = document.createElement('button');
-    toggle.className = 'octogpt-toggle';
-    toggle.setAttribute('aria-label', 'Toggle OctoGPT sidebar');
-    toggle.setAttribute('title', 'Toggle OctoGPT sidebar (Cmd/Ctrl + I)');
-    toggle.innerHTML = '≡';
-    toggle.addEventListener('click', () => this.toggle());
-    document.body.appendChild(toggle);
-    this.toggleButton = toggle;
+  createSlab() {
+    this.slab = document.createElement('div');
+    this.slab.className = 'octogpt-slab';
+    this.slab.setAttribute('aria-label', 'Show OctoGPT sidebar');
+    this.slab.innerHTML = '<span class="octogpt-slab__arrow">&lt;</span>';
+    this.slab.addEventListener('mouseenter', this.handleSlabMouseEnter);
+    document.body.appendChild(this.slab);
   }
 
   /**
@@ -200,7 +219,7 @@ class OctoGPTSidebar {
       .octogpt-sidebar__header {
         display: flex;
         align-items: center;
-        justify-content: center;
+        justify-content: space-between;
         padding: 16px;
         background: transparent;
       }
@@ -219,6 +238,50 @@ class OctoGPTSidebar {
 
       .octogpt-sidebar__logo-text {
         letter-spacing: -0.2px;
+      }
+
+      .octogpt-sidebar__pin-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        border: none;
+        border-radius: 6px;
+        background: transparent;
+        color: #8e8ea0;
+        cursor: pointer;
+        transition: all 0.15s ease;
+      }
+
+      .octogpt-sidebar__pin-btn:hover {
+        background: rgba(0, 0, 0, 0.05);
+        color: #343541;
+      }
+
+      .octogpt-sidebar__pin-btn--active {
+        color: #343541;
+        background: rgba(0, 0, 0, 0.08);
+      }
+
+      @media (prefers-color-scheme: dark) {
+        .octogpt-sidebar__pin-btn:hover {
+          background: rgba(255, 255, 255, 0.1);
+          color: #ececf1;
+        }
+
+        .octogpt-sidebar__pin-btn--active {
+          color: #ececf1;
+          background: rgba(255, 255, 255, 0.15);
+        }
+      }
+
+      .octogpt-sidebar__pin-icon {
+        transition: transform 0.15s ease;
+      }
+
+      .octogpt-sidebar__pin-btn--active .octogpt-sidebar__pin-icon {
+        transform: rotate(45deg);
       }
 
       .octogpt-sidebar__content {
@@ -378,6 +441,134 @@ class OctoGPTSidebar {
     if (resizeHandle) {
       resizeHandle.addEventListener('mousedown', this.handleResizeStart);
     }
+
+    // Pin button
+    const pinBtn = this.shadowRoot.querySelector('.octogpt-sidebar__pin-btn');
+    if (pinBtn) {
+      pinBtn.addEventListener('click', () => this.togglePin());
+    }
+
+    // Sidebar hover events for unpinned mode
+    this.sidebar.addEventListener('mouseenter', this.handleSidebarMouseEnter);
+    this.sidebar.addEventListener('mouseleave', this.handleSidebarMouseLeave);
+    this.sidebar.addEventListener('transitionend', this.handleSidebarTransitionEnd);
+  }
+
+  /**
+   * Handle slab mouseenter - show sidebar
+   */
+  handleSlabMouseEnter() {
+    if (this.isPinned) return;
+    
+    // Clear any pending hide timeout
+    if (this.hideTimeout) {
+      clearTimeout(this.hideTimeout);
+      this.hideTimeout = null;
+    }
+
+    this.isHovering = true;
+    this.showSidebar();
+  }
+
+  /**
+   * Handle sidebar mouseenter - keep sidebar visible
+   */
+  handleSidebarMouseEnter() {
+    if (this.isPinned) return;
+
+    // Clear any pending hide timeout
+    if (this.hideTimeout) {
+      clearTimeout(this.hideTimeout);
+      this.hideTimeout = null;
+    }
+
+    this.isHovering = true;
+  }
+
+  /**
+   * Handle sidebar mouseleave - start hiding sidebar
+   */
+  handleSidebarMouseLeave() {
+    if (this.isPinned || this.isResizing) return;
+
+    this.isHovering = false;
+    
+    // Small delay to allow moving back into sidebar
+    this.hideTimeout = setTimeout(() => {
+      if (!this.isHovering && !this.isResizing) {
+        this.hideSidebar();
+      }
+    }, 100);
+  }
+
+  /**
+   * Handle sidebar transition end - show slab after sidebar fully hidden
+   */
+  handleSidebarTransitionEnd(e) {
+    // Only handle transform transitions on the sidebar itself
+    if (e.propertyName !== 'transform') return;
+    
+    // If sidebar is now hidden and not pinned, show the slab
+    if (!this.isVisible && !this.isPinned && this.slab) {
+      this.slab.classList.remove('octogpt-slab--hidden');
+    }
+  }
+
+  /**
+   * Show sidebar (for hover mode)
+   */
+  showSidebar() {
+    if (this.isVisible) return;
+
+    // Hide slab immediately
+    if (this.slab) {
+      this.slab.classList.add('octogpt-slab--hidden');
+    }
+
+    this.isVisible = true;
+    this.updateVisibility();
+  }
+
+  /**
+   * Hide sidebar (for hover mode)
+   */
+  hideSidebar() {
+    if (!this.isVisible) return;
+
+    this.isVisible = false;
+    this.updateVisibility();
+    // Note: slab will be shown in handleSidebarTransitionEnd after animation completes
+  }
+
+  /**
+   * Toggle pin state
+   */
+  async togglePin() {
+    this.isPinned = !this.isPinned;
+    
+    // Update pin button visual state
+    const pinBtn = this.shadowRoot.querySelector('.octogpt-sidebar__pin-btn');
+    if (pinBtn) {
+      pinBtn.classList.toggle('octogpt-sidebar__pin-btn--active', this.isPinned);
+      pinBtn.setAttribute('title', this.isPinned ? 'Unpin sidebar' : 'Pin sidebar');
+      pinBtn.setAttribute('aria-label', this.isPinned ? 'Unpin sidebar' : 'Pin sidebar');
+    }
+
+    if (this.isPinned) {
+      // When pinning, ensure sidebar is visible and hide slab
+      if (!this.isVisible) {
+        this.isVisible = true;
+        this.updateVisibility();
+      }
+      if (this.slab) {
+        this.slab.classList.add('octogpt-slab--hidden');
+      }
+    } else {
+      // When unpinning, sidebar stays visible until mouse leaves
+      // Slab remains hidden while sidebar is visible
+    }
+
+    await this.saveState();
   }
 
   /**
@@ -476,19 +667,18 @@ class OctoGPTSidebar {
   }
 
   /**
-   * Toggle sidebar visibility
+   * Toggle sidebar pin state (keyboard shortcut)
    */
   async toggle() {
-    this.isVisible = !this.isVisible;
-    this.updateVisibility();
-    await this.saveState();
+    await this.togglePin();
   }
 
   /**
-   * Show sidebar
+   * Show sidebar (pinned)
    */
   async show() {
-    if (!this.isVisible) {
+    if (!this.isPinned) {
+      this.isPinned = true;
       this.isVisible = true;
       this.updateVisibility();
       await this.saveState();
@@ -496,10 +686,11 @@ class OctoGPTSidebar {
   }
 
   /**
-   * Hide sidebar
+   * Hide sidebar (unpin)
    */
   async hide() {
-    if (this.isVisible) {
+    if (this.isPinned) {
+      this.isPinned = false;
       this.isVisible = false;
       this.updateVisibility();
       await this.saveState();
@@ -541,16 +732,38 @@ class OctoGPTSidebar {
 
     if (this.isVisible) {
       this.sidebar.classList.add('octogpt-sidebar--visible');
-      if (this.toggleButton) {
-        this.toggleButton.style.display = 'none';
+      // Hide slab when sidebar is visible
+      if (this.slab) {
+        this.slab.classList.add('octogpt-slab--hidden');
       }
       this.adjustChatGPTLayout(sidebarWidth, true);
     } else {
       this.sidebar.classList.remove('octogpt-sidebar--visible');
-      if (this.toggleButton) {
-        this.toggleButton.style.display = 'flex';
-      }
       this.adjustChatGPTLayout(0, false);
+      // Note: slab will be shown via handleSidebarTransitionEnd after animation,
+      // EXCEPT on initial load where we need to show it immediately
+    }
+
+    // Update pin button state
+    const pinBtn = this.shadowRoot?.querySelector('.octogpt-sidebar__pin-btn');
+    if (pinBtn) {
+      pinBtn.classList.toggle('octogpt-sidebar__pin-btn--active', this.isPinned);
+      pinBtn.setAttribute('title', this.isPinned ? 'Unpin sidebar' : 'Pin sidebar');
+      pinBtn.setAttribute('aria-label', this.isPinned ? 'Unpin sidebar' : 'Pin sidebar');
+    }
+  }
+
+  /**
+   * Initialize slab visibility (called once after sidebar is created)
+   */
+  initSlabVisibility() {
+    if (!this.slab) return;
+    
+    // Show slab only if not pinned and not visible
+    if (this.isPinned || this.isVisible) {
+      this.slab.classList.add('octogpt-slab--hidden');
+    } else {
+      this.slab.classList.remove('octogpt-slab--hidden');
     }
   }
 
@@ -686,11 +899,14 @@ class OctoGPTSidebar {
     document.removeEventListener('keydown', this.handleKeyDown);
     document.removeEventListener('mousemove', this.handleResizeMove);
     document.removeEventListener('mouseup', this.handleResizeEnd);
+    if (this.hideTimeout) {
+      clearTimeout(this.hideTimeout);
+    }
     if (this.sidebar && this.sidebar.parentNode) {
       this.sidebar.parentNode.removeChild(this.sidebar);
     }
-    if (this.toggleButton && this.toggleButton.parentNode) {
-      this.toggleButton.parentNode.removeChild(this.toggleButton);
+    if (this.slab && this.slab.parentNode) {
+      this.slab.parentNode.removeChild(this.slab);
     }
   }
 }
