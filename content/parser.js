@@ -257,13 +257,17 @@ class ChatGPTParser {
 
         // Look for branch navigation elements
         // ChatGPT shows "Previous response" / "Next response" buttons with a counter like "3/3"
-        const prevButton = parent.querySelector('button[aria-label*="Previous response" i]');
-        const nextButton = parent.querySelector('button[aria-label*="Next response" i]');
+        const prevButtonEl = parent.querySelector('button[aria-label*="Previous response" i]');
+        const nextButtonEl = parent.querySelector('button[aria-label*="Next response" i]');
 
-        if (!prevButton && !nextButton) return { hasBranches: false };
+        if (!prevButtonEl && !nextButtonEl) return { hasBranches: false };
+
+        // Only include buttons that are enabled (not disabled)
+        const prevButton = prevButtonEl && !prevButtonEl.disabled ? prevButtonEl : null;
+        const nextButton = nextButtonEl && !nextButtonEl.disabled ? nextButtonEl : null;
 
         // Find the container with both buttons to get the branch counter
-        const navContainer = prevButton?.parentElement || nextButton?.parentElement;
+        const navContainer = prevButtonEl?.parentElement || nextButtonEl?.parentElement;
 
         if (!navContainer) return { hasBranches: true, hasNavContainer: false, prevButton, nextButton };
 
