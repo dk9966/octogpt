@@ -369,34 +369,6 @@ class OctoGPTSidebar {
         color: #ececec;
       }
 
-      .octogpt-sidebar__prompt-meta {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        font-size: 11px;
-        color: #6b6b6b;
-      }
-
-      :host-context(.dark) .octogpt-sidebar__prompt-meta {
-        color: #b4b4b4;
-      }
-
-      .octogpt-sidebar__prompt-branch {
-        padding: 1px 4px;
-        background: #e5e5e5;
-        color: #6b6b6b;
-        border-radius: 3px;
-        font-size: 9px;
-        font-weight: 500;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-      }
-
-      :host-context(.dark) .octogpt-sidebar__prompt-branch {
-        background: #3f3f3f;
-        color: #b4b4b4;
-      }
-
       .octogpt-sidebar__empty {
         padding: 32px 16px;
         text-align: center;
@@ -850,7 +822,6 @@ class OctoGPTSidebar {
 
     item.innerHTML = `
       <div class="octogpt-sidebar__prompt-text">${this.escapeHtml(displayText)}</div>
-      ${prompt.isBranchPoint ? '<div class="octogpt-sidebar__prompt-meta"><span class="octogpt-sidebar__prompt-branch">branch</span></div>' : ''}
     `;
 
     // Add hover tooltip with full text
