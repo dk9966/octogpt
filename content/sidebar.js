@@ -564,8 +564,15 @@ class OctoGPTSidebar {
         this.slab.classList.add('octogpt-slab--hidden');
       }
     } else {
-      // When unpinning, sidebar stays visible until mouse leaves
-      // Slab remains hidden while sidebar is visible
+      // When unpinning, check if cursor is currently over sidebar
+      // If not, hide the sidebar immediately
+      const isMouseOverSidebar = this.sidebar.matches(':hover');
+      if (!isMouseOverSidebar) {
+        this.isHovering = false;
+        this.hideSidebar();
+      } else {
+        this.isHovering = true;
+      }
     }
 
     await this.saveState();
