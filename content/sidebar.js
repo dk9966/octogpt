@@ -190,11 +190,9 @@ class OctoGPTSidebar {
         background: rgba(0, 0, 0, 0.08);
       }
 
-      @media (prefers-color-scheme: dark) {
-        .octogpt-sidebar__resize-handle:hover,
-        .octogpt-sidebar__resize-handle--active {
-          background: rgba(255, 255, 255, 0.1);
-        }
+      :host-context(.dark) .octogpt-sidebar__resize-handle:hover,
+      :host-context(.dark) .octogpt-sidebar__resize-handle--active {
+        background: rgba(255, 255, 255, 0.1);
       }
 
       .octogpt-sidebar__container {
@@ -202,18 +200,16 @@ class OctoGPTSidebar {
         flex-direction: column;
         height: 100%;
         background: #ffffff;
-        border-left: 1px solid rgba(0, 0, 0, 0.06);
+        border-left: 1px solid #e5e5e5;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
         font-size: 14px;
-        color: #374151;
+        color: #0d0d0d;
       }
 
-      @media (prefers-color-scheme: dark) {
-        .octogpt-sidebar__container {
-          background: #202123;
-          border-left-color: rgba(255, 255, 255, 0.1);
-          color: #ececf1;
-        }
+      :host-context(.dark) .octogpt-sidebar__container {
+        background: #212121;
+        border-left-color: #2f2f2f;
+        color: #ececec;
       }
 
       .octogpt-sidebar__header {
@@ -227,13 +223,11 @@ class OctoGPTSidebar {
       .octogpt-sidebar__logo {
         font-weight: 600;
         font-size: 14px;
-        color: #343541;
+        color: #0d0d0d;
       }
 
-      @media (prefers-color-scheme: dark) {
-        .octogpt-sidebar__logo {
-          color: #ececf1;
-        }
+      :host-context(.dark) .octogpt-sidebar__logo {
+        color: #ececec;
       }
 
       .octogpt-sidebar__logo-text {
@@ -249,31 +243,33 @@ class OctoGPTSidebar {
         border: none;
         border-radius: 6px;
         background: transparent;
-        color: #8e8ea0;
+        color: #6b6b6b;
         cursor: pointer;
         transition: all 0.15s ease;
       }
 
       .octogpt-sidebar__pin-btn:hover {
-        background: rgba(0, 0, 0, 0.05);
-        color: #343541;
+        background: #f0f0f0;
+        color: #0d0d0d;
       }
 
       .octogpt-sidebar__pin-btn--active {
-        color: #343541;
-        background: rgba(0, 0, 0, 0.08);
+        color: #0d0d0d;
+        background: #e5e5e5;
       }
 
-      @media (prefers-color-scheme: dark) {
-        .octogpt-sidebar__pin-btn:hover {
-          background: rgba(255, 255, 255, 0.1);
-          color: #ececf1;
-        }
+      :host-context(.dark) .octogpt-sidebar__pin-btn {
+        color: #b4b4b4;
+      }
 
-        .octogpt-sidebar__pin-btn--active {
-          color: #ececf1;
-          background: rgba(255, 255, 255, 0.15);
-        }
+      :host-context(.dark) .octogpt-sidebar__pin-btn:hover {
+        background: #2f2f2f;
+        color: #ececec;
+      }
+
+      :host-context(.dark) .octogpt-sidebar__pin-btn--active {
+        color: #ececec;
+        background: #3f3f3f;
       }
 
       .octogpt-sidebar__pin-icon {
@@ -308,14 +304,12 @@ class OctoGPTSidebar {
         background: rgba(0, 0, 0, 0.2);
       }
 
-      @media (prefers-color-scheme: dark) {
-        .octogpt-sidebar__content::-webkit-scrollbar-thumb {
-          background: rgba(255, 255, 255, 0.1);
-        }
+      :host-context(.dark) .octogpt-sidebar__content::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.1);
+      }
 
-        .octogpt-sidebar__content::-webkit-scrollbar-thumb:hover {
-          background: rgba(255, 255, 255, 0.2);
-        }
+      :host-context(.dark) .octogpt-sidebar__content::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.2);
       }
 
       .octogpt-sidebar__prompt-list {
@@ -337,27 +331,25 @@ class OctoGPTSidebar {
       }
 
       .octogpt-sidebar__prompt-item:hover {
-        background: #f7f7f8;
+        background: #f0f0f0;
       }
 
       .octogpt-sidebar__prompt-item--active {
-        background: #ececf1;
+        background: #e5e5e5;
       }
 
-      @media (prefers-color-scheme: dark) {
-        .octogpt-sidebar__prompt-item:hover {
-          background: #2a2b32;
-        }
+      :host-context(.dark) .octogpt-sidebar__prompt-item:hover {
+        background: #2f2f2f;
+      }
 
-        .octogpt-sidebar__prompt-item--active {
-          background: #343541;
-        }
+      :host-context(.dark) .octogpt-sidebar__prompt-item--active {
+        background: #3f3f3f;
       }
 
       .octogpt-sidebar__prompt-text {
         font-size: 13px;
         line-height: 1.5;
-        color: #343541;
+        color: #0d0d0d;
         margin-bottom: 2px;
         word-break: break-word;
         overflow: hidden;
@@ -365,10 +357,8 @@ class OctoGPTSidebar {
         white-space: nowrap;
       }
 
-      @media (prefers-color-scheme: dark) {
-        .octogpt-sidebar__prompt-text {
-          color: #ececf1;
-        }
+      :host-context(.dark) .octogpt-sidebar__prompt-text {
+        color: #ececec;
       }
 
       .octogpt-sidebar__prompt-meta {
@@ -376,19 +366,17 @@ class OctoGPTSidebar {
         align-items: center;
         gap: 8px;
         font-size: 11px;
-        color: #8e8ea0;
+        color: #6b6b6b;
       }
 
-      @media (prefers-color-scheme: dark) {
-        .octogpt-sidebar__prompt-meta {
-          color: #acacbe;
-        }
+      :host-context(.dark) .octogpt-sidebar__prompt-meta {
+        color: #b4b4b4;
       }
 
       .octogpt-sidebar__prompt-branch {
         padding: 1px 4px;
-        background: rgba(0, 0, 0, 0.05);
-        color: #666;
+        background: #e5e5e5;
+        color: #6b6b6b;
         border-radius: 3px;
         font-size: 9px;
         font-weight: 500;
@@ -396,25 +384,21 @@ class OctoGPTSidebar {
         letter-spacing: 0.5px;
       }
 
-      @media (prefers-color-scheme: dark) {
-        .octogpt-sidebar__prompt-branch {
-          background: rgba(255, 255, 255, 0.1);
-          color: #ececf1;
-        }
+      :host-context(.dark) .octogpt-sidebar__prompt-branch {
+        background: #3f3f3f;
+        color: #b4b4b4;
       }
 
       .octogpt-sidebar__empty {
         padding: 32px 16px;
         text-align: center;
-        color: #8e8ea0;
+        color: #6b6b6b;
         font-size: 13px;
         display: none;
       }
 
-      @media (prefers-color-scheme: dark) {
-        .octogpt-sidebar__empty {
-          color: #acacbe;
-        }
+      :host-context(.dark) .octogpt-sidebar__empty {
+        color: #b4b4b4;
       }
     `;
     this.shadowRoot.appendChild(style);

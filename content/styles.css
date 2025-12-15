@@ -49,7 +49,7 @@ body:has(.octogpt-sidebar--visible) main {
     width: 20px;
     height: 60px;
     background: #ffffff;
-    border: 1px solid rgba(0, 0, 0, 0.1);
+    border: 1px solid #e5e5e5;
     border-right: none;
     border-radius: 8px 0 0 8px;
     box-shadow: -2px 0 8px rgba(0, 0, 0, 0.08);
@@ -62,7 +62,7 @@ body:has(.octogpt-sidebar--visible) main {
 }
 
 .octogpt-slab__arrow {
-    color: #8e8ea0;
+    color: #6b6b6b;
     font-size: 12px;
     font-weight: 600;
     line-height: 1;
@@ -74,7 +74,7 @@ body:has(.octogpt-sidebar--visible) main {
 }
 
 .octogpt-slab:hover .octogpt-slab__arrow {
-    color: #343541;
+    color: #0d0d0d;
 }
 
 .octogpt-slab--hidden {
@@ -82,20 +82,19 @@ body:has(.octogpt-sidebar--visible) main {
     pointer-events: none;
 }
 
-@media (prefers-color-scheme: dark) {
-    .octogpt-slab {
-        background: #2a2b32;
-        border-color: rgba(255, 255, 255, 0.1);
-        box-shadow: -2px 0 8px rgba(0, 0, 0, 0.3);
-    }
+/* Dark mode - ChatGPT uses .dark class on html */
+.dark .octogpt-slab {
+    background: #2f2f2f;
+    border-color: #3f3f3f;
+    box-shadow: -2px 0 8px rgba(0, 0, 0, 0.3);
+}
 
-    .octogpt-slab__arrow {
-        color: #acacbe;
-    }
+.dark .octogpt-slab__arrow {
+    color: #b4b4b4;
+}
 
-    .octogpt-slab:hover .octogpt-slab__arrow {
-        color: #ececf1;
-    }
+.dark .octogpt-slab:hover .octogpt-slab__arrow {
+    color: #ececec;
 }
 
 /* Ensure ChatGPT's main content remains accessible */
