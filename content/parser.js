@@ -265,7 +265,7 @@ class ChatGPTParser {
         // Find the container with both buttons to get the branch counter
         const navContainer = prevButton?.parentElement || nextButton?.parentElement;
 
-        if (!navContainer) return { hasBranches: true, hasNavContainer: false };
+        if (!navContainer) return { hasBranches: true, hasNavContainer: false, prevButton, nextButton };
 
         // Try to extract branch position info from the counter text
         // ChatGPT typically shows something like "3/3" for branches
@@ -277,10 +277,12 @@ class ChatGPTParser {
                 hasBranches: true,
                 current: parseInt(match[1]),
                 total: parseInt(match[2]),
+                prevButton,
+                nextButton,
             };
         }
 
-        return { hasBranches: true, hasMatch: false };
+        return { hasBranches: true, hasMatch: false, prevButton, nextButton };
     }
 
     /**
@@ -348,6 +350,7 @@ class ChatGPTParser {
                 isEdited: prompt.isEdited,
                 isBranchPoint: prompt.isBranchPoint,
                 inBranch: prompt.inBranch,
+                branchInfo: prompt.branchInfo,
                 element: prompt.element,
             };
         });

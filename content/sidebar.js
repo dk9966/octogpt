@@ -328,7 +328,9 @@ class OctoGPTSidebar {
       }
 
       .octogpt-sidebar__prompt-item {
-        display: block;
+        display: flex;
+        align-items: center;
+        gap: 0;
         box-sizing: border-box;
         padding: 10px 12px;
         cursor: pointer;
@@ -336,6 +338,14 @@ class OctoGPTSidebar {
         border-radius: 6px;
         margin: 0;
         border: none;
+      }
+
+      .octogpt-sidebar__prompt-item--has-prev {
+        padding-left: 0;
+      }
+
+      .octogpt-sidebar__prompt-item--has-next {
+        padding-right: 0;
       }
 
       .octogpt-sidebar__prompt-item:hover {
@@ -355,10 +365,11 @@ class OctoGPTSidebar {
       }
 
       .octogpt-sidebar__prompt-text {
+        flex: 1;
+        min-width: 0;
         font-size: 13px;
         line-height: 1.5;
         color: #0d0d0d;
-        margin-bottom: 2px;
         word-break: break-word;
         overflow: hidden;
         text-overflow: ellipsis;
@@ -366,6 +377,32 @@ class OctoGPTSidebar {
       }
 
       :host-context(.dark) .octogpt-sidebar__prompt-text {
+        color: #ececec;
+      }
+
+      .octogpt-sidebar__branch-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 12px;
+        flex-shrink: 0;
+        padding: 0;
+        border: none;
+        background: transparent;
+        color: #9a9a9a;
+        font-size: 11px;
+        font-weight: 500;
+        cursor: pointer;
+        border-radius: 0;
+        transition: all 0.1s ease;
+        line-height: 1;
+      }
+
+      .octogpt-sidebar__branch-btn:hover {
+        color: #0d0d0d;
+      }
+
+      :host-context(.dark) .octogpt-sidebar__branch-btn:hover {
         color: #ececec;
       }
 
@@ -810,22 +847,47 @@ class OctoGPTSidebar {
     // Build content
     const isActive = index === this.currentPromptIndex;
     const activeClass = isActive ? 'octogpt-sidebar__prompt-item--active' : '';
+    const hasBranches = prompt.isBranchPoint && prompt.branchInfo;
+    const hasPrev = hasBranches && prompt.branchInfo.prevButton;
+    const hasNext = hasBranches && prompt.branchInfo.nextButton;
+    const prevClass = hasPrev ? 'octogpt-sidebar__prompt-item--has-prev' : '';
+    const nextClass = hasNext ? 'octogpt-sidebar__prompt-item--has-next' : '';
 
-    item.className = `octogpt-sidebar__prompt-item ${activeClass}`;
+    item.className = `octogpt-sidebar__prompt-item ${activeClass} ${prevClass} ${nextClass}`;
 
     // Calculate display text based on current sidebar width
     const maxLength = this.getPreviewMaxLength();
     let displayText = this.truncateText(prompt.text, maxLength);
-    if (prompt.isBranchPoint) {
-      displayText = `< ${displayText} >`;
-    }
 
+    // Build HTML with branch buttons only where they exist
+    const prevBtnHtml = hasPrev ? `<button class="octogpt-sidebar__branch-btn" data-branch-action="prev" title="Previous version">&lt;</button>` : '';
+    const nextBtnHtml = hasNext ? `<button class="octogpt-sidebar__branch-btn" data-branch-action="next" title="Next version">&gt;</button>` : '';
+    
     item.innerHTML = `
+      ${prevBtnHtml}
       <div class="octogpt-sidebar__prompt-text">${this.escapeHtml(displayText)}</div>
+      ${nextBtnHtml}
     `;
 
     // Add hover tooltip with full text
     item.title = prompt.text;
+
+    // Add click handlers for branch navigation buttons
+    if (hasPrev) {
+      const prevBtn = item.querySelector('[data-branch-action="prev"]');
+      prevBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        prompt.branchInfo.prevButton.click();
+      });
+    }
+    
+    if (hasNext) {
+      const nextBtn = item.querySelector('[data-branch-action="next"]');
+      nextBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        prompt.branchInfo.nextButton.click();
+      });
+    }
 
     return item;
   }
