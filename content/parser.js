@@ -130,6 +130,12 @@ class ChatGPTParser {
         const text = element.textContent.trim();
         if (!text || text.length === 0) return false;
 
+        // Filter out SSR hydration scripts and other JS artifacts
+        // ChatGPT injects window.__oai_* scripts during page load
+        if (text.startsWith('window.__oai_') || text.includes('__oai_SSR_HTML')) {
+            return false;
+        }
+
         // Check for common assistant message indicators
         const hasTypingIndicator = element.querySelector('[class*="typing"]');
         const hasStopButton = element.querySelector('button[aria-label*="Stop" i]');

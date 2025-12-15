@@ -5,6 +5,7 @@
 
 class OctoGPTSidebar {
   constructor() {
+    this.rootContainer = null;
     this.sidebar = null;
     this.shadowRoot = null;
     this.slab = null;
@@ -96,7 +97,14 @@ class OctoGPTSidebar {
    * Create the sidebar DOM structure using Shadow DOM
    */
   createSidebar() {
-    // Create container
+    // Create a root container outside React's hydration scope
+    // This prevents React hydration errors when ChatGPT re-renders
+    this.rootContainer = document.createElement('div');
+    this.rootContainer.id = 'octogpt-root';
+    this.rootContainer.setAttribute('data-octogpt', 'true');
+    document.body.appendChild(this.rootContainer);
+
+    // Create sidebar inside our container
     this.sidebar = document.createElement('div');
     this.sidebar.id = 'octogpt-sidebar';
     this.sidebar.className = 'octogpt-sidebar';
@@ -137,8 +145,8 @@ class OctoGPTSidebar {
     // Attach event listeners
     this.attachEventListeners();
 
-    // Append to body
-    document.body.appendChild(this.sidebar);
+    // Append to our isolated container (not directly to body)
+    this.rootContainer.appendChild(this.sidebar);
 
     // Create hover slab
     this.createSlab();
@@ -159,7 +167,7 @@ class OctoGPTSidebar {
     this.slab.setAttribute('aria-label', 'Show OctoGPT sidebar');
     this.slab.innerHTML = '<span class="octogpt-slab__arrow">&lt;</span>';
     this.slab.addEventListener('mouseenter', this.handleSlabMouseEnter);
-    document.body.appendChild(this.slab);
+    this.rootContainer.appendChild(this.slab);
   }
 
   /**
@@ -893,12 +901,13 @@ class OctoGPTSidebar {
     if (this.hideTimeout) {
       clearTimeout(this.hideTimeout);
     }
-    if (this.sidebar && this.sidebar.parentNode) {
-      this.sidebar.parentNode.removeChild(this.sidebar);
+    // Remove the entire root container (includes sidebar and slab)
+    if (this.rootContainer && this.rootContainer.parentNode) {
+      this.rootContainer.parentNode.removeChild(this.rootContainer);
     }
-    if (this.slab && this.slab.parentNode) {
-      this.slab.parentNode.removeChild(this.slab);
-    }
+    this.sidebar = null;
+    this.slab = null;
+    this.rootContainer = null;
   }
 }
 
