@@ -15,7 +15,7 @@ class OctoGPTSidebar {
     this.currentPromptIndex = -1;
     this.config = {
       defaultWidth: 200,
-      minWidth: 180,
+      minWidth: 120,
       maxWidth: 400,
     };
 
