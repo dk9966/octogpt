@@ -28,48 +28,48 @@ class OctoGPT {
 
     console.log('[OctoGPT] Waiting for ChatGPT to be ready...');
 
-    // Wait for React hydration to complete before touching the DOM
-    await this.waitForHydration();
+    // Wait for ChatGPT DOM elements to be present
+    await this.waitForReady();
 
     console.log('[OctoGPT] ChatGPT ready, initializing...');
     await this.setup();
   }
 
   /**
-   * Wait for React hydration to complete
-   * Detects when React has attached its internal fiber properties to DOM elements
+   * Wait for ChatGPT page to be ready
+   * Checks for specific DOM elements rather than React internals
    */
-  waitForHydration() {
+  waitForReady() {
     return new Promise((resolve) => {
-      const TIMEOUT = 15000;
-      const CHECK_INTERVAL = 100;
+      const TIMEOUT = 10000;
+      const CHECK_INTERVAL = 50;
       const startTime = Date.now();
 
-      const isHydrated = (element) => {
-        if (!element) return false;
-        return Object.keys(element).some(key =>
-          key.startsWith('__reactFiber') || key.startsWith('__reactProps')
-        );
+      const isReady = () => {
+        // Need main element
+        const main = document.querySelector('main');
+        if (!main) return false;
+
+        // Either has conversation content OR has input area (empty/new chat)
+        const hasContent = document.querySelector('[data-testid^="conversation-turn-"]') ||
+                           document.querySelector('[data-message-author-role]');
+        const hasInput = document.querySelector('#prompt-textarea, textarea[placeholder], [contenteditable="true"]');
+
+        return hasContent || hasInput;
       };
 
       const check = () => {
-        const main = document.querySelector('main');
-        
-        // Check if main exists AND React has hydrated it
-        if (main && isHydrated(main)) {
-          // Small buffer to ensure event handlers are attached
-          setTimeout(resolve, 100);
+        if (isReady()) {
+          setTimeout(resolve, 50);
           return;
         }
 
-        // Timeout fallback
         if (Date.now() - startTime > TIMEOUT) {
-          console.warn('[OctoGPT] Hydration timeout, proceeding anyway');
+          console.warn('[OctoGPT] Ready timeout, proceeding anyway');
           resolve();
           return;
         }
 
-        // Keep checking
         setTimeout(check, CHECK_INTERVAL);
       };
 
