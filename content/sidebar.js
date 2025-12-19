@@ -652,7 +652,7 @@ class OctoGPTSidebar {
   }
 
   /**
-   * Setup keyboard shortcut (Cmd/Ctrl + K)
+   * Setup keyboard shortcut (Cmd/Ctrl + Shift + H)
    */
   setupKeyboardShortcut() {
     document.addEventListener('keydown', this.handleKeyDown);
@@ -662,8 +662,8 @@ class OctoGPTSidebar {
    * Handle keyboard shortcuts
      */
   handleKeyDown(event) {
-    // Cmd/Ctrl + I to toggle sidebar
-    if ((event.metaKey || event.ctrlKey) && event.key === 'i') {
+    // Cmd/Ctrl + Shift + H to toggle sidebar
+    if ((event.metaKey || event.ctrlKey) && event.shiftKey && event.key === 'H') {
       // Don't trigger if user is typing in an input
       if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
         return;
