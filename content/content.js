@@ -23,17 +23,58 @@ class OctoGPT {
   /**
    * Initialize the extension
    */
-  init() {
+  async init() {
     if (this.isInitialized) return;
 
-    console.log('[OctoGPT] Initializing...');
+    console.log('[OctoGPT] Waiting for ChatGPT to be ready...');
 
-    // Wait for page to be ready
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', () => this.setup());
-    } else {
-      this.setup();
-    }
+    // Wait for React hydration to complete before touching the DOM
+    await this.waitForHydration();
+
+    console.log('[OctoGPT] ChatGPT ready, initializing...');
+    await this.setup();
+  }
+
+  /**
+   * Wait for React hydration to complete
+   * Detects when React has attached its internal fiber properties to DOM elements
+   */
+  waitForHydration() {
+    return new Promise((resolve) => {
+      const TIMEOUT = 15000;
+      const CHECK_INTERVAL = 100;
+      const startTime = Date.now();
+
+      const isHydrated = (element) => {
+        if (!element) return false;
+        return Object.keys(element).some(key =>
+          key.startsWith('__reactFiber') || key.startsWith('__reactProps')
+        );
+      };
+
+      const check = () => {
+        const main = document.querySelector('main');
+        
+        // Check if main exists AND React has hydrated it
+        if (main && isHydrated(main)) {
+          // Small buffer to ensure event handlers are attached
+          setTimeout(resolve, 100);
+          return;
+        }
+
+        // Timeout fallback
+        if (Date.now() - startTime > TIMEOUT) {
+          console.warn('[OctoGPT] Hydration timeout, proceeding anyway');
+          resolve();
+          return;
+        }
+
+        // Keep checking
+        setTimeout(check, CHECK_INTERVAL);
+      };
+
+      check();
+    });
   }
 
   /**

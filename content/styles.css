@@ -97,8 +97,8 @@ body:has(.octogpt-sidebar--visible) main {
     color: #ececec;
 }
 
-/* Ensure ChatGPT's main content remains accessible */
-main {
+/* Ensure ChatGPT's main content remains accessible (only when OctoGPT is active) */
+body:has(#octogpt-root) main {
     position: relative;
     z-index: 1;
 }
