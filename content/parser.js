@@ -3,6 +3,20 @@
  * Handles extraction of user prompts from ChatGPT DOM
  */
 
+/**
+ * Debug logging configuration
+ * Set to true to enable console output
+ */
+const DEBUG = false;
+
+const log = {
+  info: (...args) => DEBUG && console.log('[OctoGPT]', ...args),
+  warn: (...args) => DEBUG && console.warn('[OctoGPT]', ...args),
+  error: (...args) => DEBUG && console.error('[OctoGPT]', ...args),
+  group: (label) => DEBUG && console.group(label),
+  groupEnd: () => DEBUG && console.groupEnd(),
+};
+
 class ChatGPTParser {
     constructor() {
         this.prompts = [];
@@ -48,7 +62,7 @@ class ChatGPTParser {
         this.prompts = [];
 
         if (!this.conversationId) {
-            console.log('[OctoGPT] No conversation detected');
+            log.info('No conversation detected');
             return [];
         }
 
@@ -70,7 +84,7 @@ class ChatGPTParser {
 
         // Fallback to alternative selectors if primary fails
         if (userElements.length === 0) {
-            console.log('[OctoGPT] No user messages found with primary selector, trying fallback');
+            log.info('No user messages found with primary selector, trying fallback');
             userElements = this.findUserMessagesWithFallback();
         }
 
@@ -178,7 +192,7 @@ class ChatGPTParser {
 
             return promptData;
         } catch (error) {
-            console.error('[OctoGPT] Error extracting prompt data:', error);
+            log.error('Error extracting prompt data:', error);
             return null;
         }
     }

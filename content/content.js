@@ -26,12 +26,12 @@ class OctoGPT {
   async init() {
     if (this.isInitialized) return;
 
-    console.log('[OctoGPT] Waiting for ChatGPT to be ready...');
+    log.info('Waiting for ChatGPT to be ready...');
 
     // Wait for ChatGPT DOM elements to be present
     await this.waitForReady();
 
-    console.log('[OctoGPT] ChatGPT ready, initializing...');
+    log.info('ChatGPT ready, initializing...');
     await this.setup();
   }
 
@@ -65,7 +65,7 @@ class OctoGPT {
         }
 
         if (Date.now() - startTime > TIMEOUT) {
-          console.warn('[OctoGPT] Ready timeout, proceeding anyway');
+          log.warn('Ready timeout, proceeding anyway');
           resolve();
           return;
         }
@@ -81,7 +81,7 @@ class OctoGPT {
    * Setup the extension after page is ready
    */
   async setup() {
-    console.log('[OctoGPT] Setting up...');
+    log.info('Setting up...');
 
     // Initialize sidebar
     if (window.OctoGPTSidebar) {
@@ -99,7 +99,7 @@ class OctoGPT {
     this.setupNavigationListener();
 
     this.isInitialized = true;
-    console.log('[OctoGPT] Initialized successfully');
+    log.info('Initialized successfully');
   }
 
   /**
@@ -115,7 +115,7 @@ class OctoGPT {
 
     this.lastUpdateTime = now;
 
-    console.log('[OctoGPT] Extracting prompts...');
+    log.info('Extracting prompts...');
 
     const rawPrompts = this.parser.extractAllPrompts();
     const formattedPrompts = this.parser.formatPromptsForDisplay();
@@ -127,35 +127,35 @@ class OctoGPT {
       this.sidebar.updatePrompts(formattedPrompts);
     }
 
-    // Log results for Phase 1 validation
-    console.log(`[OctoGPT] Found ${formattedPrompts.length} prompts`);
+    // Log results for debugging
+    log.info(`Found ${formattedPrompts.length} prompts`);
 
     if (formattedPrompts.length > 0) {
-      console.group('[OctoGPT] Extracted Prompts:');
+      log.group('[OctoGPT] Extracted Prompts:');
 
       formattedPrompts.forEach((prompt, index) => {
         const branchIndicator = prompt.isBranchPoint ? ' [EDITED/BRANCH]' :
           prompt.inBranch ? ' [IN BRANCH]' : '';
 
-        console.log(`${index + 1}. ${prompt.display}${branchIndicator}`);
-        console.log(`   Full text: "${prompt.text.substring(0, 100)}${prompt.text.length > 100 ? '...' : ''}"`);
+        log.info(`${index + 1}. ${prompt.display}${branchIndicator}`);
+        log.info(`   Full text: "${prompt.text.substring(0, 100)}${prompt.text.length > 100 ? '...' : ''}"`);
 
         if (prompt.isBranchPoint) {
-          console.log(`   -> This is a branch point (edited prompt)`);
+          log.info(`   -> This is a branch point (edited prompt)`);
         }
       });
 
-      console.groupEnd();
+      log.groupEnd();
 
       // Log branch structure
       const branchInfo = this.analyzeBranchStructure(formattedPrompts);
       if (branchInfo.hasBranches) {
-        console.log(`[OctoGPT] Branch structure detected:`);
-        console.log(`  - Branch points: ${branchInfo.branchPoints}`);
-        console.log(`  - Prompts in active branch: ${branchInfo.promptsInBranch}`);
+        log.info(`Branch structure detected:`);
+        log.info(`  - Branch points: ${branchInfo.branchPoints}`);
+        log.info(`  - Prompts in active branch: ${branchInfo.promptsInBranch}`);
       }
     } else {
-      console.log('[OctoGPT] No prompts found in current conversation');
+      log.info('No prompts found in current conversation');
     }
   }
 
@@ -178,7 +178,7 @@ class OctoGPT {
    * Setup MutationObserver to detect changes in the conversation
    */
   setupMutationObserver() {
-    console.log('[OctoGPT] Setting up MutationObserver...');
+    log.info('Setting up MutationObserver...');
 
     // Target the main conversation container
     const targetNode = document.querySelector('main') || document.body;
@@ -225,7 +225,7 @@ class OctoGPT {
     this.observer = new MutationObserver(callback);
     this.observer.observe(targetNode, config);
 
-    console.log('[OctoGPT] MutationObserver active');
+    log.info('MutationObserver active');
   }
 
   /**
@@ -250,7 +250,7 @@ class OctoGPT {
     clearTimeout(this.debounceTimer);
 
     this.debounceTimer = setTimeout(() => {
-      console.log('[OctoGPT] Detected changes, updating...');
+      log.info('Detected changes, updating...');
       this.extractAndLog();
     }, this.config.debounceDelay);
   }
@@ -284,7 +284,7 @@ class OctoGPT {
 
       if (currentUrl !== lastUrl) {
         lastUrl = currentUrl;
-        console.log('[OctoGPT] Navigation detected, re-initializing...');
+        log.info('Navigation detected, re-initializing...');
 
         // Wait a bit for new content to load
         setTimeout(() => {
@@ -317,7 +317,7 @@ class OctoGPT {
 
     clearTimeout(this.debounceTimer);
 
-    console.log('[OctoGPT] Cleaned up');
+    log.info('Cleaned up');
   }
 }
 
@@ -328,7 +328,7 @@ octogpt.init();
 // Make available globally for debugging
 window.octogpt = octogpt;
 
-console.log('[OctoGPT] Content script loaded');
+log.info('Content script loaded');
 
 // Cleanup before unload
 window.addEventListener('beforeunload', () => {

@@ -3,6 +3,8 @@
  * Handles sidebar UI creation, rendering, and interactions
  */
 
+// Note: DEBUG and log are defined in parser.js (loaded first)
+
 class OctoGPTSidebar {
   constructor() {
     this.rootContainer = null;
@@ -72,7 +74,7 @@ class OctoGPTSidebar {
         this.config.defaultWidth = result.sidebarWidth;
       }
     } catch (error) {
-      console.error('[OctoGPT] Error loading sidebar state:', error);
+      log.error('Error loading sidebar state:', error);
       this.isPinned = false;
       this.isVisible = false;
       this.config.defaultWidth = 200;
@@ -89,7 +91,7 @@ class OctoGPTSidebar {
         sidebarWidth: this.config.defaultWidth,
       });
     } catch (error) {
-      console.error('[OctoGPT] Error saving sidebar state:', error);
+      log.error('Error saving sidebar state:', error);
     }
   }
 
@@ -906,7 +908,7 @@ class OctoGPTSidebar {
 
     // Check if element is still attached to DOM (React may have re-rendered)
     if (!prompt.element.isConnected) {
-      console.warn('[OctoGPT] Element detached from DOM, skipping scroll');
+      log.warn('Element detached from DOM, skipping scroll');
       return;
     }
 
