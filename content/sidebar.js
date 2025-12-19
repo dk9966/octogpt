@@ -659,7 +659,7 @@ class OctoGPTSidebar {
    * Handle keyboard shortcuts
      */
   handleKeyDown(event) {
-    if ((event.metaKey || event.ctrlKey) && event.key === 'H') {
+    if ((event.metaKey || event.ctrlKey) && event.key === 'h') {
       // Don't trigger if user is typing in an input
       if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
         return;
@@ -904,20 +904,44 @@ class OctoGPTSidebar {
     const prompt = this.prompts[index];
     if (!prompt || !prompt.element) return;
 
-    // Scroll to the prompt element in the main chat
-    // Phase 3 will implement smooth scrolling
-    prompt.element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    // Update active state visually without re-rendering DOM
+    // This prevents scroll interruption from DOM mutations
+    this.setActivePrompt(index, true);
 
-    // Update active state
-    this.setActivePrompt(index);
+    // Scroll to the prompt element in the main chat
+    prompt.element.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
   /**
    * Set the active prompt index
+   * @param {number} index - The prompt index to set as active
+   * @param {boolean} skipRender - If true, update visually without full re-render
    */
-  setActivePrompt(index) {
+  setActivePrompt(index, skipRender = false) {
+    const prevIndex = this.currentPromptIndex;
     this.currentPromptIndex = index;
-    this.render();
+
+    if (skipRender) {
+      // Update active class directly without rebuilding DOM
+      const promptList = this.shadowRoot?.querySelector('.octogpt-sidebar__prompt-list');
+      if (!promptList) return;
+
+      // Remove active from previous
+      if (prevIndex >= 0) {
+        const prevItem = promptList.querySelector(`[data-index="${prevIndex}"]`);
+        if (prevItem) {
+          prevItem.classList.remove('octogpt-sidebar__prompt-item--active');
+        }
+      }
+
+      // Add active to current
+      const currentItem = promptList.querySelector(`[data-index="${index}"]`);
+      if (currentItem) {
+        currentItem.classList.add('octogpt-sidebar__prompt-item--active');
+      }
+    } else {
+      this.render();
+    }
   }
 
   /**
