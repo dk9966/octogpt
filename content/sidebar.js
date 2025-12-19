@@ -818,7 +818,7 @@ class OctoGPTSidebar {
   getPreviewMaxLength() {
     const width = this.config.defaultWidth;
     const horizontalPadding = 40; // content + item padding
-    const avgCharWidth = 7; // approximate width per character at 13px
+    const avgCharWidth = 5.5; // approximate width per character at 13px
     return Math.floor((width - horizontalPadding) / avgCharWidth);
   }
 
