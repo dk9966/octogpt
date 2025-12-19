@@ -904,12 +904,78 @@ class OctoGPTSidebar {
     const prompt = this.prompts[index];
     if (!prompt || !prompt.element) return;
 
+    // Check if element is still attached to DOM (React may have re-rendered)
+    if (!prompt.element.isConnected) {
+      console.warn('[OctoGPT] Element detached from DOM, skipping scroll');
+      return;
+    }
+
     // Update active state visually without re-rendering DOM
-    // This prevents scroll interruption from DOM mutations
     this.setActivePrompt(index, true);
 
-    // Scroll to the prompt element in the main chat
-    prompt.element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    // Scroll to the prompt element
+    this.scrollToElement(prompt.element);
+  }
+
+  /**
+   * Scroll to element in ChatGPT's conversation container
+   * Uses direct scroll on the correct container to avoid react-scroll-to-bottom conflicts
+   */
+  scrollToElement(element) {
+    // Find ChatGPT's actual scroll container (inside react-scroll-to-bottom)
+    const scrollContainer = this.findScrollContainer();
+
+    if (scrollContainer) {
+      // Calculate position to center the element
+      const elementRect = element.getBoundingClientRect();
+      const containerRect = scrollContainer.getBoundingClientRect();
+      const elementOffsetTop = element.offsetTop || (scrollContainer.scrollTop + elementRect.top - containerRect.top);
+      const targetScroll = elementOffsetTop - (containerRect.height / 2) + (elementRect.height / 2);
+
+      scrollContainer.scrollTo({
+        top: Math.max(0, targetScroll),
+        behavior: 'smooth'
+      });
+    } else {
+      // Fallback to scrollIntoView if container not found
+      element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }
+
+  /**
+   * Find ChatGPT's scroll container
+   * The react-scroll-to-bottom library nests the scrollable element inside
+   */
+  findScrollContainer() {
+    // Try common patterns for ChatGPT's scroll container
+    const selectors = [
+      'main [class*="react-scroll-to-bottom"] > div',
+      'main [class*="react-scroll-to-bottom--css"]',
+      'main [class*="overflow-y-auto"]'
+    ];
+
+    for (const selector of selectors) {
+      const container = document.querySelector(selector);
+      if (container && container.scrollHeight > container.clientHeight) {
+        return container;
+      }
+    }
+
+    // Fallback: find any scrollable ancestor of a conversation turn
+    const turn = document.querySelector('[data-testid^="conversation-turn-"]');
+    if (turn) {
+      let parent = turn.parentElement;
+      while (parent && parent !== document.body) {
+        const style = getComputedStyle(parent);
+        const isScrollable = style.overflowY === 'auto' || style.overflowY === 'scroll';
+        if (isScrollable && parent.scrollHeight > parent.clientHeight) {
+          return parent;
+        }
+        parent = parent.parentElement;
+      }
+    }
+
+    return null;
   }
 
   /**
