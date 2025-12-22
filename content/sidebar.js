@@ -704,6 +704,41 @@ class OctoGPTSidebar {
   }
 
   /**
+   * Save current scroll position of ChatGPT's conversation
+   */
+  saveScrollPosition() {
+    const scrollContainer = this.findScrollContainer();
+    if (scrollContainer) {
+      return scrollContainer.scrollTop;
+    }
+    return null;
+  }
+
+  /**
+   * Restore scroll position with multiple attempts to beat react-scroll-to-bottom
+   * The library may fight back with its own scroll management
+   */
+  restoreScrollPosition(savedScrollTop) {
+    if (savedScrollTop === null) return;
+
+    const restore = () => {
+      // Re-find container each time in case React replaced it
+      const scrollContainer = this.findScrollContainer();
+      if (scrollContainer && scrollContainer.isConnected) {
+        scrollContainer.scrollTop = savedScrollTop;
+      }
+    };
+
+    // Multiple restore attempts at different timings to beat async scroll managers
+    restore(); // Immediate
+    requestAnimationFrame(restore);
+    requestAnimationFrame(() => requestAnimationFrame(restore));
+    setTimeout(restore, 50);
+    setTimeout(restore, 100);
+    setTimeout(restore, 200);
+  }
+
+  /**
    * Adjust ChatGPT layout elements to accommodate sidebar
    */
   adjustChatGPTLayout(width, animate = true) {
@@ -744,8 +779,16 @@ class OctoGPTSidebar {
       }
       this.adjustChatGPTLayout(sidebarWidth, true);
     } else {
+      // IMPORTANT: Save scroll position BEFORE any changes
+      // CSS :has() rules trigger instantly when class is removed
+      const savedScrollTop = this.saveScrollPosition();
+
       this.sidebar.classList.remove('octogpt-sidebar--visible');
       this.adjustChatGPTLayout(0, false);
+
+      // Restore scroll position with multiple attempts to beat react-scroll-to-bottom
+      this.restoreScrollPosition(savedScrollTop);
+
       // Note: slab will be shown via handleSidebarTransitionEnd after animation,
       // EXCEPT on initial load where we need to show it immediately
     }
