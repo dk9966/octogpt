@@ -7,7 +7,7 @@
  * Debug logging configuration
  * Set to true to enable console output
  */
-const DEBUG = false;
+const DEBUG = true;
 
 const log = {
   info: (...args) => DEBUG && console.log('[OctoGPT]', ...args),
@@ -179,6 +179,9 @@ class ChatGPTParser {
             const branchInfo = this.getBranchInfo(element);
             const isEdited = branchInfo?.hasBranches ?? false;
 
+            // Extract headings from the assistant response that follows this prompt
+            const headings = this.extractAssistantHeadings(element);
+
             const promptData = {
                 id: this.generatePromptId(element, index),
                 index: index,
@@ -188,6 +191,7 @@ class ChatGPTParser {
                 isEdited: isEdited,
                 branchInfo: branchInfo,
                 element: element,
+                headings: headings,
             };
 
             return promptData;
@@ -195,6 +199,53 @@ class ChatGPTParser {
             log.error('Error extracting prompt data:', error);
             return null;
         }
+    }
+
+    /**
+     * Extract headings from the assistant response following a user message
+     * Falls back through h2 -> h3 -> h4 -> h5 -> h6 if none found
+     */
+    extractAssistantHeadings(userElement) {
+        // Find the conversation turn containing this user message
+        const userTurn = userElement.closest('[data-testid^="conversation-turn-"]');
+        if (!userTurn) {
+            log.info('No user turn found for heading extraction');
+            return [];
+        }
+
+        // Find the next sibling turn (should be assistant response)
+        const assistantTurn = userTurn.nextElementSibling;
+        if (!assistantTurn) {
+            log.info('No assistant turn found after user turn');
+            return [];
+        }
+
+        // Verify it's an assistant message
+        const isAssistant = assistantTurn.querySelector('[data-message-author-role="assistant"]');
+        if (!isAssistant) {
+            log.info('Next turn is not an assistant message');
+            return [];
+        }
+
+        // Try heading levels in order of priority
+        const headingLevels = ['h2', 'h3', 'h4', 'h5', 'h6'];
+        
+        for (const level of headingLevels) {
+            const headings = assistantTurn.querySelectorAll(level);
+            log.info(`Checking ${level}: found ${headings.length}`);
+            if (headings.length > 0) {
+                const result = Array.from(headings).map(h => ({
+                    level: level,
+                    text: h.textContent.trim(),
+                    element: h,
+                }));
+                log.info('Extracted headings:', result.map(h => h.text));
+                return result;
+            }
+        }
+
+        log.info('No headings found in assistant response');
+        return [];
     }
 
     /**
@@ -370,6 +421,7 @@ class ChatGPTParser {
                 inBranch: prompt.inBranch,
                 branchInfo: prompt.branchInfo,
                 element: prompt.element,
+                headings: prompt.headings,
             };
         });
     }

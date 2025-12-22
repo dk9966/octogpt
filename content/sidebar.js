@@ -419,6 +419,65 @@ class OctoGPTSidebar {
       :host-context(.dark) .octogpt-sidebar__empty {
         color: #b4b4b4;
       }
+
+      /* Prompt group wrapper */
+      .octogpt-sidebar__prompt-group {
+        display: flex;
+        flex-direction: column;
+      }
+
+      /* Headings container */
+      .octogpt-sidebar__headings {
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+        margin-left: 12px;
+        padding-left: 8px;
+        border-left: 1px solid #e0e0e0;
+      }
+
+      :host-context(.dark) .octogpt-sidebar__headings {
+        border-left-color: #3a3a3a;
+      }
+
+      /* Heading item */
+      .octogpt-sidebar__heading-item {
+        display: flex;
+        align-items: center;
+        padding: 6px 10px;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        border-radius: 4px;
+      }
+
+      .octogpt-sidebar__heading-item:hover {
+        background: #f5f5f5;
+      }
+
+      :host-context(.dark) .octogpt-sidebar__heading-item:hover {
+        background: #2a2a2a;
+      }
+
+      .octogpt-sidebar__heading-text {
+        font-size: 12px;
+        line-height: 1.4;
+        color: #6b6b6b;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      :host-context(.dark) .octogpt-sidebar__heading-text {
+        color: #9a9a9a;
+      }
+
+      .octogpt-sidebar__heading-item:hover .octogpt-sidebar__heading-text {
+        color: #0d0d0d;
+      }
+
+      :host-context(.dark) .octogpt-sidebar__heading-item:hover .octogpt-sidebar__heading-text {
+        color: #ececec;
+      }
     `;
     this.shadowRoot.appendChild(style);
   }
@@ -427,18 +486,6 @@ class OctoGPTSidebar {
    * Attach event listeners to sidebar elements
    */
   attachEventListeners() {
-    const promptList = this.shadowRoot.querySelector('.octogpt-sidebar__prompt-list');
-
-    if (promptList) {
-      promptList.addEventListener('click', (e) => {
-        const promptItem = e.target.closest('.octogpt-sidebar__prompt-item');
-        if (promptItem) {
-          const index = parseInt(promptItem.dataset.index);
-          this.handlePromptClick(index);
-        }
-      });
-    }
-
     // Resize handle
     const resizeHandle = this.shadowRoot.querySelector('.octogpt-sidebar__resize-handle');
     if (resizeHandle) {
@@ -917,12 +964,17 @@ class OctoGPTSidebar {
   }
 
   /**
-   * Create a prompt list item element
+   * Create a prompt list item element with its headings
    */
   createPromptItem(prompt, index) {
+    // Create a wrapper for prompt + headings
+    const wrapper = document.createElement('div');
+    wrapper.className = 'octogpt-sidebar__prompt-group';
+    wrapper.dataset.index = index;
+
+    // Create the prompt item
     const item = document.createElement('div');
     item.className = 'octogpt-sidebar__prompt-item';
-    item.dataset.index = index;
     item.setAttribute('role', 'listitem');
     item.setAttribute('tabindex', '0');
     item.setAttribute('aria-label', `Prompt ${index + 1}: ${prompt.text.substring(0, 50)}`);
@@ -971,6 +1023,49 @@ class OctoGPTSidebar {
         prompt.branchInfo.nextButton.click();
       });
     }
+
+    // Add click handler on item for scrolling
+    item.addEventListener('click', () => {
+      this.handlePromptClick(index);
+    });
+
+    wrapper.appendChild(item);
+
+    // Add headings if present
+    if (prompt.headings && prompt.headings.length > 0) {
+      const headingsContainer = document.createElement('div');
+      headingsContainer.className = 'octogpt-sidebar__headings';
+
+      prompt.headings.forEach(heading => {
+        const headingItem = this.createHeadingItem(heading, maxLength);
+        headingsContainer.appendChild(headingItem);
+      });
+
+      wrapper.appendChild(headingsContainer);
+    }
+
+    return wrapper;
+  }
+
+  /**
+   * Create a heading item element
+   */
+  createHeadingItem(heading, maxLength) {
+    const item = document.createElement('div');
+    item.className = `octogpt-sidebar__heading-item octogpt-sidebar__heading-item--${heading.level}`;
+    item.setAttribute('role', 'listitem');
+    item.setAttribute('tabindex', '0');
+
+    const displayText = this.truncateText(heading.text, maxLength - 4); // Account for indent
+    item.innerHTML = `<span class="octogpt-sidebar__heading-text">${this.escapeHtml(displayText)}</span>`;
+    item.title = heading.text;
+
+    // Click to scroll to heading
+    item.addEventListener('click', () => {
+      if (heading.element && heading.element.isConnected) {
+        this.scrollToElement(heading.element);
+      }
+    });
 
     return item;
   }
@@ -1081,14 +1176,16 @@ class OctoGPTSidebar {
 
       // Remove active from previous
       if (prevIndex >= 0) {
-        const prevItem = promptList.querySelector(`[data-index="${prevIndex}"]`);
+        const prevGroup = promptList.querySelector(`[data-index="${prevIndex}"]`);
+        const prevItem = prevGroup?.querySelector('.octogpt-sidebar__prompt-item');
         if (prevItem) {
           prevItem.classList.remove('octogpt-sidebar__prompt-item--active');
         }
       }
 
       // Add active to current
-      const currentItem = promptList.querySelector(`[data-index="${index}"]`);
+      const currentGroup = promptList.querySelector(`[data-index="${index}"]`);
+      const currentItem = currentGroup?.querySelector('.octogpt-sidebar__prompt-item');
       if (currentItem) {
         currentItem.classList.add('octogpt-sidebar__prompt-item--active');
       }
