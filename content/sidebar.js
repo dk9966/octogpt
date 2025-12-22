@@ -558,16 +558,22 @@ class OctoGPTSidebar {
     }
 
     if (this.isPinned) {
-      // When pinning, ensure sidebar is visible and hide slab
+      // When pinning, ensure sidebar is visible, hide slab, and push content
       if (!this.isVisible) {
         this.isVisible = true;
         this.updateVisibility();
+      } else {
+        // Sidebar already visible, just need to push content now that we're pinned
+        this.adjustChatGPTLayout(this.config.defaultWidth, true);
       }
       if (this.slab) {
         this.slab.classList.add('octogpt-slab--hidden');
       }
     } else {
-      // When unpinning, check if cursor is currently over sidebar
+      // When unpinning, release content margin (no layout change = no scroll reset)
+      this.adjustChatGPTLayout(0, false);
+      
+      // Check if cursor is currently over sidebar
       // If not, hide the sidebar immediately
       const isMouseOverSidebar = this.sidebar.matches(':hover');
       if (!isMouseOverSidebar) {
@@ -704,28 +710,54 @@ class OctoGPTSidebar {
   }
 
   /**
-   * Save current scroll position of ChatGPT's conversation
+   * Save current scroll state by finding a visible element and its viewport offset
+   * This is more reliable than raw scrollTop when layout changes
    */
   saveScrollPosition() {
     const scrollContainer = this.findScrollContainer();
-    if (scrollContainer) {
-      return scrollContainer.scrollTop;
+    if (!scrollContainer) return null;
+
+    const containerRect = scrollContainer.getBoundingClientRect();
+    
+    // Find a conversation turn that's visible in the viewport
+    const turns = document.querySelectorAll('[data-testid^="conversation-turn-"]');
+    for (const turn of turns) {
+      const turnRect = turn.getBoundingClientRect();
+      // Check if this turn is visible in the scroll container
+      if (turnRect.top < containerRect.bottom && turnRect.bottom > containerRect.top) {
+        // Save this element and its offset from container top
+        return {
+          element: turn,
+          offsetFromContainerTop: turnRect.top - containerRect.top
+        };
+      }
     }
-    return null;
+
+    // Fallback to raw scrollTop if no visible element found
+    return { scrollTop: scrollContainer.scrollTop };
   }
 
   /**
    * Restore scroll position with multiple attempts to beat react-scroll-to-bottom
    * The library may fight back with its own scroll management
    */
-  restoreScrollPosition(savedScrollTop) {
-    if (savedScrollTop === null) return;
+  restoreScrollPosition(saved) {
+    if (!saved) return;
 
     const restore = () => {
-      // Re-find container each time in case React replaced it
       const scrollContainer = this.findScrollContainer();
-      if (scrollContainer && scrollContainer.isConnected) {
-        scrollContainer.scrollTop = savedScrollTop;
+      if (!scrollContainer) return;
+
+      if (saved.element && saved.element.isConnected) {
+        // Element-based restore: put the element back at the same viewport offset
+        const containerRect = scrollContainer.getBoundingClientRect();
+        const elementRect = saved.element.getBoundingClientRect();
+        const currentOffset = elementRect.top - containerRect.top;
+        const scrollAdjustment = currentOffset - saved.offsetFromContainerTop;
+        scrollContainer.scrollTop += scrollAdjustment;
+      } else if (saved.scrollTop !== undefined) {
+        // Fallback to raw scrollTop
+        scrollContainer.scrollTop = saved.scrollTop;
       }
     };
 
@@ -740,10 +772,22 @@ class OctoGPTSidebar {
 
   /**
    * Adjust ChatGPT layout elements to accommodate sidebar
+   * Only pushes content when pinned - unpinned mode is overlay-only
    */
   adjustChatGPTLayout(width, animate = true) {
+    // Only push content when pinned - unpinned sidebar overlays without affecting layout
+    if (!this.isPinned) {
+      // Clear any existing margin when unpinned
+      const main = document.querySelector('main');
+      const container = main?.parentElement;
+      if (container) {
+        container.style.marginRight = '';
+        container.style.transition = '';
+      }
+      return;
+    }
+
     // Find the outermost content container - the parent of main
-    // This typically contains both the header and main content
     const main = document.querySelector('main');
     const container = main?.parentElement;
     
@@ -777,18 +821,16 @@ class OctoGPTSidebar {
       if (this.slab) {
         this.slab.classList.add('octogpt-slab--hidden');
       }
-      this.adjustChatGPTLayout(sidebarWidth, true);
+      // Only push content when pinned
+      if (this.isPinned) {
+        this.adjustChatGPTLayout(sidebarWidth, true);
+      }
     } else {
-      // IMPORTANT: Save scroll position BEFORE any changes
-      // CSS :has() rules trigger instantly when class is removed
-      const savedScrollTop = this.saveScrollPosition();
-
       this.sidebar.classList.remove('octogpt-sidebar--visible');
-      this.adjustChatGPTLayout(0, false);
-
-      // Restore scroll position with multiple attempts to beat react-scroll-to-bottom
-      this.restoreScrollPosition(savedScrollTop);
-
+      // Only adjust layout when pinned - unpinned mode is overlay, no layout changes
+      if (this.isPinned) {
+        this.adjustChatGPTLayout(0, false);
+      }
       // Note: slab will be shown via handleSidebarTransitionEnd after animation,
       // EXCEPT on initial load where we need to show it immediately
     }
