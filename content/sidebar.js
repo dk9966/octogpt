@@ -1033,6 +1033,8 @@ class OctoGPTSidebar {
 
     // Add headings if present
     if (prompt.headings && prompt.headings.length > 0) {
+      console.log(`[OctoGPT] Rendering ${prompt.headings.length} headings for prompt ${index}:`, prompt.headings.map(h => h.text));
+      
       const headingsContainer = document.createElement('div');
       headingsContainer.className = 'octogpt-sidebar__headings';
 
@@ -1060,14 +1062,27 @@ class OctoGPTSidebar {
     item.innerHTML = `<span class="octogpt-sidebar__heading-text">${this.escapeHtml(displayText)}</span>`;
     item.title = heading.text;
 
-    // Click to scroll to heading
+    // Click to scroll to heading - re-query DOM to avoid stale references
     item.addEventListener('click', () => {
-      if (heading.element && heading.element.isConnected) {
-        this.scrollToElement(heading.element);
+      const element = this.findHeadingElement(heading);
+      if (element) {
+        this.scrollToElement(element);
       }
     });
 
     return item;
+  }
+
+  /**
+   * Find heading element in DOM by turn ID and index
+   * Re-queries to avoid stale references after React re-renders
+   */
+  findHeadingElement(heading) {
+    const turn = document.querySelector(`[data-testid="${heading.turnId}"]`);
+    if (!turn) return null;
+
+    const headings = turn.querySelectorAll(heading.level);
+    return headings[heading.index] || null;
   }
 
   /**

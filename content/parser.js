@@ -182,6 +182,11 @@ class ChatGPTParser {
             // Extract headings from the assistant response that follows this prompt
             const headings = this.extractAssistantHeadings(element);
 
+            log.info(`Prompt ${index}: "${textContent.substring(0, 30)}..." -> ${headings.length} headings`);
+            if (headings.length > 0) {
+                log.info(`  Headings for prompt ${index}:`, headings.map(h => h.text));
+            }
+
             const promptData = {
                 id: this.generatePromptId(element, index),
                 index: index,
@@ -213,38 +218,57 @@ class ChatGPTParser {
             return [];
         }
 
-        // Find the next sibling turn (should be assistant response)
-        const assistantTurn = userTurn.nextElementSibling;
-        if (!assistantTurn) {
-            log.info('No assistant turn found after user turn');
+        const userTurnId = userTurn.getAttribute('data-testid');
+        log.info(`User turn: ${userTurnId}`);
+
+        // First: check if assistant response is in the NEXT sibling turn
+        // ChatGPT typically has separate turns for user and assistant
+        let assistantContainer = null;
+        const nextTurn = userTurn.nextElementSibling;
+        
+        if (nextTurn) {
+            const nextTurnId = nextTurn.getAttribute('data-testid');
+            const assistantInNext = nextTurn.querySelector('[data-message-author-role="assistant"]');
+            if (assistantInNext) {
+                log.info(`Found assistant in next turn: ${nextTurnId}`);
+                assistantContainer = nextTurn;
+            }
+        }
+
+        // If not found in next sibling, the assistant may not have responded yet
+        if (!assistantContainer) {
+            log.info('No assistant response found for this user message');
             return [];
         }
 
-        // Verify it's an assistant message
-        const isAssistant = assistantTurn.querySelector('[data-message-author-role="assistant"]');
-        if (!isAssistant) {
-            log.info('Next turn is not an assistant message');
-            return [];
-        }
+        // Extract headings from the assistant container
+        return this.extractHeadingsFromElement(assistantContainer);
+    }
 
-        // Try heading levels in order of priority
+    /**
+     * Extract headings from a DOM element
+     * Falls back through h2 -> h3 -> h4 -> h5 -> h6 if none found at higher levels
+     * Stores turn ID for re-querying later (DOM elements can become stale after React re-renders)
+     */
+    extractHeadingsFromElement(container) {
+        const turnId = container.getAttribute('data-testid');
         const headingLevels = ['h2', 'h3', 'h4', 'h5', 'h6'];
         
         for (const level of headingLevels) {
-            const headings = assistantTurn.querySelectorAll(level);
-            log.info(`Checking ${level}: found ${headings.length}`);
+            const headings = container.querySelectorAll(level);
             if (headings.length > 0) {
-                const result = Array.from(headings).map(h => ({
+                const result = Array.from(headings).map((h, idx) => ({
                     level: level,
                     text: h.textContent.trim(),
-                    element: h,
+                    turnId: turnId,
+                    index: idx,
                 }));
-                log.info('Extracted headings:', result.map(h => h.text));
+                log.info(`Extracted ${level} headings:`, result.map(h => h.text));
                 return result;
             }
         }
 
-        log.info('No headings found in assistant response');
+        log.info('No headings found');
         return [];
     }
 
