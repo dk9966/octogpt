@@ -15,6 +15,7 @@ class OctoGPTSidebar {
     this.isPinned = false;
     this.prompts = [];
     this.currentPromptIndex = -1;
+    this.collapsedPrompts = new Set(); // Track which prompts have collapsed headings
     this.config = {
       defaultWidth: 200,
       minWidth: 120,
@@ -426,6 +427,41 @@ class OctoGPTSidebar {
         flex-direction: column;
       }
 
+      /* Toggle button for collapsing headings */
+      .octogpt-sidebar__toggle-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 16px;
+        height: 16px;
+        flex-shrink: 0;
+        padding: 0;
+        margin-right: 4px;
+        border: none;
+        background: transparent;
+        color: #9a9a9a;
+        cursor: pointer;
+        transition: color 0.1s ease;
+      }
+
+      .octogpt-sidebar__toggle-btn:hover {
+        color: #0d0d0d;
+      }
+
+      :host-context(.dark) .octogpt-sidebar__toggle-btn:hover {
+        color: #ececec;
+      }
+
+      .octogpt-sidebar__toggle-icon {
+        width: 8px;
+        height: 8px;
+        transition: transform 0.15s ease;
+      }
+
+      .octogpt-sidebar__toggle-btn--collapsed .octogpt-sidebar__toggle-icon {
+        transform: rotate(-90deg);
+      }
+
       /* Headings container */
       .octogpt-sidebar__headings {
         display: flex;
@@ -434,6 +470,14 @@ class OctoGPTSidebar {
         margin-left: 12px;
         padding-left: 8px;
         border-left: 1px solid #e0e0e0;
+        overflow: hidden;
+        transition: max-height 0.2s ease, opacity 0.15s ease;
+      }
+
+      .octogpt-sidebar__headings--collapsed {
+        max-height: 0;
+        opacity: 0;
+        pointer-events: none;
       }
 
       :host-context(.dark) .octogpt-sidebar__headings {
@@ -987,6 +1031,8 @@ class OctoGPTSidebar {
     const hasNext = hasBranches && prompt.branchInfo.nextButton;
     const prevClass = hasPrev ? 'octogpt-sidebar__prompt-item--has-prev' : '';
     const nextClass = hasNext ? 'octogpt-sidebar__prompt-item--has-next' : '';
+    const hasHeadings = prompt.headings && prompt.headings.length > 0;
+    const isCollapsed = this.collapsedPrompts.has(index);
 
     item.className = `octogpt-sidebar__prompt-item ${activeClass} ${prevClass} ${nextClass}`;
 
@@ -994,18 +1040,37 @@ class OctoGPTSidebar {
     const maxLength = this.getPreviewMaxLength();
     let displayText = this.truncateText(prompt.text, maxLength);
 
-    // Build HTML with branch buttons only where they exist
+    // Build HTML with toggle button, branch buttons, and text
+    const toggleBtnHtml = hasHeadings ? `
+      <button class="octogpt-sidebar__toggle-btn ${isCollapsed ? 'octogpt-sidebar__toggle-btn--collapsed' : ''}" 
+              data-toggle-action="collapse" 
+              title="${isCollapsed ? 'Expand headers' : 'Collapse headers'}">
+        <svg class="octogpt-sidebar__toggle-icon" viewBox="0 0 8 8" fill="currentColor">
+          <path d="M1 2.5L4 5.5L7 2.5" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    ` : '';
     const prevBtnHtml = hasPrev ? `<button class="octogpt-sidebar__branch-btn" data-branch-action="prev" title="Previous version">&lt;</button>` : '';
     const nextBtnHtml = hasNext ? `<button class="octogpt-sidebar__branch-btn" data-branch-action="next" title="Next version">&gt;</button>` : '';
     
     item.innerHTML = `
       ${prevBtnHtml}
+      ${toggleBtnHtml}
       <div class="octogpt-sidebar__prompt-text">${this.escapeHtml(displayText)}</div>
       ${nextBtnHtml}
     `;
 
     // Add hover tooltip with full text
     item.title = prompt.text;
+
+    // Add click handler for toggle button (does NOT scroll)
+    if (hasHeadings) {
+      const toggleBtn = item.querySelector('[data-toggle-action="collapse"]');
+      toggleBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.togglePromptCollapse(index);
+      });
+    }
 
     // Add click handlers for branch navigation buttons
     if (hasPrev) {
@@ -1032,9 +1097,9 @@ class OctoGPTSidebar {
     wrapper.appendChild(item);
 
     // Add headings if present
-    if (prompt.headings && prompt.headings.length > 0) {
+    if (hasHeadings) {
       const headingsContainer = document.createElement('div');
-      headingsContainer.className = 'octogpt-sidebar__headings';
+      headingsContainer.className = `octogpt-sidebar__headings ${isCollapsed ? 'octogpt-sidebar__headings--collapsed' : ''}`;
 
       prompt.headings.forEach(heading => {
         const headingItem = this.createHeadingItem(heading, maxLength);
@@ -1045,6 +1110,42 @@ class OctoGPTSidebar {
     }
 
     return wrapper;
+  }
+
+  /**
+   * Toggle the collapsed state for a prompt's headings
+   */
+  togglePromptCollapse(index) {
+    const promptList = this.shadowRoot?.querySelector('.octogpt-sidebar__prompt-list');
+    if (!promptList) return;
+
+    const wrapper = promptList.querySelector(`[data-index="${index}"]`);
+    if (!wrapper) return;
+
+    const toggleBtn = wrapper.querySelector('.octogpt-sidebar__toggle-btn');
+    const headingsContainer = wrapper.querySelector('.octogpt-sidebar__headings');
+
+    if (this.collapsedPrompts.has(index)) {
+      // Expand
+      this.collapsedPrompts.delete(index);
+      if (toggleBtn) {
+        toggleBtn.classList.remove('octogpt-sidebar__toggle-btn--collapsed');
+        toggleBtn.title = 'Collapse headers';
+      }
+      if (headingsContainer) {
+        headingsContainer.classList.remove('octogpt-sidebar__headings--collapsed');
+      }
+    } else {
+      // Collapse
+      this.collapsedPrompts.add(index);
+      if (toggleBtn) {
+        toggleBtn.classList.add('octogpt-sidebar__toggle-btn--collapsed');
+        toggleBtn.title = 'Expand headers';
+      }
+      if (headingsContainer) {
+        headingsContainer.classList.add('octogpt-sidebar__headings--collapsed');
+      }
+    }
   }
 
   /**
