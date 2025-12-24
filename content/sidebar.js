@@ -1035,6 +1035,10 @@ class OctoGPTSidebar {
     if (prompt.headings && prompt.headings.length > 0) {
       console.log(`[OctoGPT] Rendering ${prompt.headings.length} headings for prompt ${index}:`, prompt.headings.map(h => h.text));
       
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/355f618a-e6f2-482b-9421-d8db93173052',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'sidebar.js:createPromptItem:headings',message:'Rendering headings for prompt',data:{promptIndex:index,promptPreview:prompt.text?.substring(0,30),headingsCount:prompt.headings.length,headingTurnIds:prompt.headings.map(h=>h.turnId),headingTexts:prompt.headings.map(h=>h.text?.substring(0,25))},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'I'})}).catch(()=>{});
+      // #endregion
+      
       const headingsContainer = document.createElement('div');
       headingsContainer.className = 'octogpt-sidebar__headings';
 
@@ -1064,6 +1068,9 @@ class OctoGPTSidebar {
 
     // Click to scroll to heading - re-query DOM to avoid stale references
     item.addEventListener('click', () => {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/355f618a-e6f2-482b-9421-d8db93173052',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'sidebar.js:createHeadingItem:click',message:'Heading clicked',data:{headingText:heading.text,headingTurnId:heading.turnId,headingLevel:heading.level,headingIndex:heading.index},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'G'})}).catch(()=>{});
+      // #endregion
       const element = this.findHeadingElement(heading);
       if (element) {
         this.scrollToElement(element);
@@ -1078,11 +1085,36 @@ class OctoGPTSidebar {
    * Re-queries to avoid stale references after React re-renders
    */
   findHeadingElement(heading) {
+    console.log('[OctoGPT] Finding heading:', heading);
+    
+    // #region agent log
+    const allMatchingTurns = document.querySelectorAll(`[data-testid="${heading.turnId}"]`);
+    fetch('http://127.0.0.1:7242/ingest/355f618a-e6f2-482b-9421-d8db93173052',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'sidebar.js:findHeadingElement:input',message:'Finding heading element',data:{headingText:heading.text,headingTurnId:heading.turnId,headingLevel:heading.level,headingIndex:heading.index,duplicateTurnCount:allMatchingTurns.length},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H'})}).catch(()=>{});
+    // #endregion
+    
     const turn = document.querySelector(`[data-testid="${heading.turnId}"]`);
+    console.log('[OctoGPT] Found turn:', turn ? heading.turnId : 'NOT FOUND');
+    
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/355f618a-e6f2-482b-9421-d8db93173052',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'sidebar.js:findHeadingElement:turn',message:'Turn lookup result',data:{headingText:heading.text,queriedTurnId:heading.turnId,turnFound:!!turn,actualTurnId:turn?.getAttribute('data-testid'),turnIsConnected:turn?.isConnected,turnParentId:turn?.parentElement?.id},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'F'})}).catch(()=>{});
+    // #endregion
+    
     if (!turn) return null;
 
     const headings = turn.querySelectorAll(heading.level);
-    return headings[heading.index] || null;
+    console.log(`[OctoGPT] Found ${headings.length} ${heading.level} headings in turn, looking for index ${heading.index}`);
+    
+    const element = headings[heading.index];
+    
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/355f618a-e6f2-482b-9421-d8db93173052',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'sidebar.js:findHeadingElement:result',message:'Heading element lookup',data:{headingText:heading.text,headingLevel:heading.level,headingIndex:heading.index,headingsFoundInTurn:headings.length,allHeadingTexts:Array.from(headings).map(h=>h.textContent.substring(0,30)),returnedElementText:element?.textContent?.substring(0,50),expectedVsActualMatch:heading.text.substring(0,30)===element?.textContent?.substring(0,30)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'F'})}).catch(()=>{});
+    // #endregion
+    
+    if (element) {
+      console.log('[OctoGPT] Found element:', element.textContent.substring(0, 50));
+    }
+    
+    return element || null;
   }
 
   /**
@@ -1123,11 +1155,17 @@ class OctoGPTSidebar {
     const scrollContainer = this.findScrollContainer();
 
     if (scrollContainer) {
-      // Calculate position to center the element
+      // Calculate position to center the element using getBoundingClientRect
+      // Note: element.offsetTop is relative to offsetParent, not the scroll container,
+      // so we must use getBoundingClientRect for accurate positioning
       const elementRect = element.getBoundingClientRect();
       const containerRect = scrollContainer.getBoundingClientRect();
-      const elementOffsetTop = element.offsetTop || (scrollContainer.scrollTop + elementRect.top - containerRect.top);
-      const targetScroll = elementOffsetTop - (containerRect.height / 2) + (elementRect.height / 2);
+      const elementOffsetInContainer = scrollContainer.scrollTop + elementRect.top - containerRect.top;
+      const targetScroll = elementOffsetInContainer - (containerRect.height / 2) + (elementRect.height / 2);
+
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/355f618a-e6f2-482b-9421-d8db93173052',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'sidebar.js:scrollToElement',message:'Scroll calculation (fixed)',data:{elementText:element.textContent?.substring(0,40),elementOffsetInContainer:elementOffsetInContainer,scrollContainerScrollTop:scrollContainer.scrollTop,elementRectTop:elementRect.top,containerRectTop:containerRect.top,containerHeight:containerRect.height,targetScroll:targetScroll,runId:'post-fix'},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'J'})}).catch(()=>{});
+      // #endregion
 
       scrollContainer.scrollTo({
         top: Math.max(0, targetScroll),

@@ -179,8 +179,16 @@ class ChatGPTParser {
             const branchInfo = this.getBranchInfo(element);
             const isEdited = branchInfo?.hasBranches ?? false;
 
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/355f618a-e6f2-482b-9421-d8db93173052',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'parser.js:extractPromptData:before',message:'About to extract headings',data:{promptIndex:index,promptPreview:textContent.substring(0,50)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'D'})}).catch(()=>{});
+            // #endregion
+
             // Extract headings from the assistant response that follows this prompt
             const headings = this.extractAssistantHeadings(element);
+
+            // #region agent log
+            fetch('http://127.0.0.1:7242/ingest/355f618a-e6f2-482b-9421-d8db93173052',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'parser.js:extractPromptData:after',message:'Headings extracted for prompt',data:{promptIndex:index,headingsCount:headings.length,headingTurnIds:headings.map(h=>h.turnId),headingTexts:headings.map(h=>h.text)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'D,E'})}).catch(()=>{});
+            // #endregion
 
             log.info(`Prompt ${index}: "${textContent.substring(0, 30)}..." -> ${headings.length} headings`);
             if (headings.length > 0) {
@@ -221,10 +229,18 @@ class ChatGPTParser {
         const userTurnId = userTurn.getAttribute('data-testid');
         log.info(`User turn: ${userTurnId}`);
 
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/355f618a-e6f2-482b-9421-d8db93173052',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'parser.js:extractAssistantHeadings',message:'User turn found',data:{userTurnId:userTurnId,userElementOuterHTML:userElement.outerHTML.substring(0,200)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A,D'})}).catch(()=>{});
+        // #endregion
+
         // First: check if assistant response is in the NEXT sibling turn
         // ChatGPT typically has separate turns for user and assistant
         let assistantContainer = null;
         const nextTurn = userTurn.nextElementSibling;
+        
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/355f618a-e6f2-482b-9421-d8db93173052',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'parser.js:extractAssistantHeadings:nextTurn',message:'Next sibling check',data:{userTurnId:userTurnId,nextTurnExists:!!nextTurn,nextTurnId:nextTurn?.getAttribute('data-testid'),nextTurnFirstChild:nextTurn?.firstElementChild?.tagName},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'B,D'})}).catch(()=>{});
+        // #endregion
         
         if (nextTurn) {
             const nextTurnId = nextTurn.getAttribute('data-testid');
@@ -240,6 +256,11 @@ class ChatGPTParser {
             log.info('No assistant response found for this user message');
             return [];
         }
+
+        // #region agent log
+        const assistantTurnId = assistantContainer.getAttribute('data-testid');
+        fetch('http://127.0.0.1:7242/ingest/355f618a-e6f2-482b-9421-d8db93173052',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'parser.js:extractAssistantHeadings:found',message:'Assistant container found',data:{userTurnId:userTurnId,assistantTurnId:assistantTurnId},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'C,D'})}).catch(()=>{});
+        // #endregion
 
         // Extract headings from the assistant container
         return this.extractHeadingsFromElement(assistantContainer);
@@ -263,6 +284,9 @@ class ChatGPTParser {
                     turnId: turnId,
                     index: idx,
                 }));
+                // #region agent log
+                fetch('http://127.0.0.1:7242/ingest/355f618a-e6f2-482b-9421-d8db93173052',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'parser.js:extractHeadingsFromElement',message:'Headings extracted',data:{turnId:turnId,level:level,count:headings.length,headingTexts:result.map(h=>h.text),headingIndices:result.map(h=>h.index)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'C,E'})}).catch(()=>{});
+                // #endregion
                 log.info(`Extracted ${level} headings:`, result.map(h => h.text));
                 return result;
             }
