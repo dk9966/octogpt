@@ -117,7 +117,7 @@ class OctoGPT {
 
     log.info('Extracting prompts...');
 
-    const rawPrompts = this.parser.extractAllPrompts();
+    this.parser.extractAllPrompts();
     const formattedPrompts = this.parser.formatPromptsForDisplay();
 
     this.prompts = formattedPrompts;
@@ -334,6 +334,3 @@ log.info('Content script loaded');
 window.addEventListener('beforeunload', () => {
   octogpt.destroy();
 });
-
-
-
