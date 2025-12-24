@@ -123,11 +123,19 @@ class OctoGPTSidebar {
           <div class="octogpt-sidebar__logo">
             <span class="octogpt-sidebar__logo-text">OctoGPT</span>
           </div>
-          <button class="octogpt-sidebar__pin-btn" aria-label="Pin sidebar" title="Pin sidebar">
-            <svg class="octogpt-sidebar__pin-icon" viewBox="0 0 16 16" width="14" height="14">
-              <path fill="currentColor" d="M9.828.722a.5.5 0 0 1 .354.146l4.95 4.95a.5.5 0 0 1 0 .707c-.48.48-1.072.588-1.503.588-.177 0-.335-.018-.46-.039l-3.134 3.134a5.927 5.927 0 0 1 .16 1.013c.046.702-.032 1.687-.72 2.375a.5.5 0 0 1-.707 0l-2.829-2.828-3.182 3.182a.5.5 0 0 1-.707 0 .5.5 0 0 1 0-.707l3.182-3.182-2.828-2.829a.5.5 0 0 1 0-.707c.688-.688 1.673-.767 2.375-.72a5.922 5.922 0 0 1 1.013.16l3.134-3.133a2.772 2.772 0 0 1-.04-.461c0-.43.108-1.022.589-1.503a.5.5 0 0 1 .353-.146z"/>
-            </svg>
-          </button>
+          <div class="octogpt-sidebar__header-actions">
+            <button class="octogpt-sidebar__collapse-all-btn" aria-label="Collapse all headers" title="Collapse all">
+              <svg class="octogpt-sidebar__collapse-all-icon" viewBox="0 0 16 16" width="14" height="14">
+                <path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" d="M4 4l4 3.5 4-3.5"/>
+                <path fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" d="M4 8.5l4 3.5 4-3.5"/>
+              </svg>
+            </button>
+            <button class="octogpt-sidebar__pin-btn" aria-label="Pin sidebar" title="Pin sidebar">
+              <svg class="octogpt-sidebar__pin-icon" viewBox="0 0 16 16" width="14" height="14">
+                <path fill="currentColor" d="M9.828.722a.5.5 0 0 1 .354.146l4.95 4.95a.5.5 0 0 1 0 .707c-.48.48-1.072.588-1.503.588-.177 0-.335-.018-.46-.039l-3.134 3.134a5.927 5.927 0 0 1 .16 1.013c.046.702-.032 1.687-.72 2.375a.5.5 0 0 1-.707 0l-2.829-2.828-3.182 3.182a.5.5 0 0 1-.707 0 .5.5 0 0 1 0-.707l3.182-3.182-2.828-2.829a.5.5 0 0 1 0-.707c.688-.688 1.673-.767 2.375-.72a5.922 5.922 0 0 1 1.013.16l3.134-3.133a2.772 2.772 0 0 1-.04-.461c0-.43.108-1.022.589-1.503a.5.5 0 0 1 .353-.146z"/>
+              </svg>
+            </button>
+          </div>
         </div>
         <div class="octogpt-sidebar__content">
           <div class="octogpt-sidebar__prompt-list" role="list">
@@ -243,6 +251,48 @@ class OctoGPTSidebar {
 
       .octogpt-sidebar__logo-text {
         letter-spacing: -0.2px;
+      }
+
+      .octogpt-sidebar__header-actions {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+
+      .octogpt-sidebar__collapse-all-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 28px;
+        height: 28px;
+        border: none;
+        border-radius: 6px;
+        background: transparent;
+        color: #6b6b6b;
+        cursor: pointer;
+        transition: all 0.15s ease;
+      }
+
+      .octogpt-sidebar__collapse-all-btn:hover {
+        background: #f0f0f0;
+        color: #0d0d0d;
+      }
+
+      :host-context(.dark) .octogpt-sidebar__collapse-all-btn {
+        color: #b4b4b4;
+      }
+
+      :host-context(.dark) .octogpt-sidebar__collapse-all-btn:hover {
+        background: #2f2f2f;
+        color: #ececec;
+      }
+
+      .octogpt-sidebar__collapse-all-icon {
+        transition: transform 0.2s ease;
+      }
+
+      .octogpt-sidebar__collapse-all-btn--collapsed .octogpt-sidebar__collapse-all-icon {
+        transform: rotate(-90deg);
       }
 
       .octogpt-sidebar__pin-btn {
@@ -534,6 +584,12 @@ class OctoGPTSidebar {
     const resizeHandle = this.shadowRoot.querySelector('.octogpt-sidebar__resize-handle');
     if (resizeHandle) {
       resizeHandle.addEventListener('mousedown', this.handleResizeStart);
+    }
+
+    // Collapse all button
+    const collapseAllBtn = this.shadowRoot.querySelector('.octogpt-sidebar__collapse-all-btn');
+    if (collapseAllBtn) {
+      collapseAllBtn.addEventListener('click', () => this.toggleAllCollapsed());
     }
 
     // Pin button
@@ -983,6 +1039,9 @@ class OctoGPTSidebar {
       const promptItem = this.createPromptItem(prompt, index);
       promptList.appendChild(promptItem);
     });
+
+    // Update collapse-all button state
+    this.updateCollapseAllButton();
   }
 
   /**
@@ -1064,11 +1123,19 @@ class OctoGPTSidebar {
     item.title = prompt.text;
 
     // Add click handler for toggle button (does NOT scroll)
+    // Option/Alt+click toggles ALL prompts (macOS Finder convention)
     if (hasHeadings) {
       const toggleBtn = item.querySelector('[data-toggle-action="collapse"]');
       toggleBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        this.togglePromptCollapse(index);
+        if (e.altKey) {
+          // Alt/Option+click: toggle all to match this prompt's target state
+          const willCollapse = !this.collapsedPrompts.has(index);
+          this.toggleAllCollapsed(willCollapse);
+        } else {
+          this.togglePromptCollapse(index);
+          this.updateCollapseAllButton();
+        }
       });
     }
 
@@ -1145,6 +1212,67 @@ class OctoGPTSidebar {
       if (headingsContainer) {
         headingsContainer.classList.add('octogpt-sidebar__headings--collapsed');
       }
+    }
+  }
+
+  /**
+   * Toggle all prompts collapsed/expanded
+   * @param {boolean} forceCollapse - If provided, force this state instead of toggling
+   */
+  toggleAllCollapsed(forceCollapse) {
+    const promptsWithHeadings = this.prompts
+      .map((p, i) => ({ prompt: p, index: i }))
+      .filter(({ prompt }) => prompt.headings?.length > 0);
+
+    if (promptsWithHeadings.length === 0) return;
+
+    // Determine target state: if any are expanded, collapse all. Otherwise expand all.
+    const allCollapsed = promptsWithHeadings.every(({ index }) => 
+      this.collapsedPrompts.has(index)
+    );
+
+    const shouldCollapse = forceCollapse !== undefined ? forceCollapse : !allCollapsed;
+
+    promptsWithHeadings.forEach(({ index }) => {
+      if (shouldCollapse) {
+        this.collapsedPrompts.add(index);
+      } else {
+        this.collapsedPrompts.delete(index);
+      }
+    });
+
+    // Re-render to apply changes
+    this.render();
+    this.updateCollapseAllButton();
+  }
+
+  /**
+   * Update the collapse-all button icon and title based on current state
+   */
+  updateCollapseAllButton() {
+    const btn = this.shadowRoot?.querySelector('.octogpt-sidebar__collapse-all-btn');
+    if (!btn) return;
+
+    const promptsWithHeadings = this.prompts.filter(p => p.headings?.length > 0);
+    if (promptsWithHeadings.length === 0) {
+      btn.style.display = 'none';
+      return;
+    }
+
+    btn.style.display = 'flex';
+
+    const allCollapsed = this.prompts.every((p, i) => 
+      !p.headings?.length || this.collapsedPrompts.has(i)
+    );
+
+    if (allCollapsed) {
+      btn.classList.add('octogpt-sidebar__collapse-all-btn--collapsed');
+      btn.title = 'Expand all';
+      btn.setAttribute('aria-label', 'Expand all headers');
+    } else {
+      btn.classList.remove('octogpt-sidebar__collapse-all-btn--collapsed');
+      btn.title = 'Collapse all';
+      btn.setAttribute('aria-label', 'Collapse all headers');
     }
   }
 
