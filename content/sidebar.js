@@ -20,7 +20,7 @@ class OctoGPTSidebar {
       defaultWidth: 200,
       minWidth: 120,
       maxWidth: 400,
-      scrollDuration: 0, // ms, 0 for instant
+      scrollDuration: 500, // ms, 0 for instant
     };
 
     // Resize state
@@ -130,7 +130,7 @@ class OctoGPTSidebar {
       <div class="octogpt-sidebar__container">
         <div class="octogpt-sidebar__header">
           <div class="octogpt-sidebar__logo">
-            <span class="octogpt-sidebar__logo-text">OctoGPT</span>
+            <img class="octogpt-sidebar__logo-icon" src="${chrome.runtime.getURL('assets/icons/icon48.png')}" alt="OctoGPT" />
           </div>
           <div class="octogpt-sidebar__header-actions">
             <button class="octogpt-sidebar__collapse-all-btn" aria-label="Collapse all headers" title="Collapse all">
@@ -249,17 +249,13 @@ class OctoGPTSidebar {
       }
 
       .octogpt-sidebar__logo {
-        font-weight: 600;
-        font-size: 14px;
-        color: #0d0d0d;
+        display: flex;
+        align-items: center;
       }
 
-      :host-context(.dark) .octogpt-sidebar__logo {
-        color: #ececec;
-      }
-
-      .octogpt-sidebar__logo-text {
-        letter-spacing: -0.2px;
+      .octogpt-sidebar__logo-icon {
+        width: 24px;
+        height: 24px;
       }
 
       .octogpt-sidebar__header-actions {
