@@ -1283,8 +1283,14 @@ class OctoGPTSidebar {
   /**
    * Custom smooth scroll with configurable duration
    * Uses easeOutCubic for natural deceleration
+   * Pass duration=0 for instant teleport
    */
   smoothScrollTo(container, targetTop, duration) {
+    if (duration <= 0) {
+      container.scrollTop = targetTop;
+      return;
+    }
+
     const startTop = container.scrollTop;
     const distance = targetTop - startTop;
     const startTime = performance.now();
