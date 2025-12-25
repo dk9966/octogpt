@@ -28,15 +28,15 @@
         }
     ],
     "icons": {
-        "16": "assets/icons/icon.svg",
-        "48": "assets/icons/icon.svg",
-        "128": "assets/icons/icon.svg"
+        "16": "assets/icons/icon16.png",
+        "48": "assets/icons/icon48.png",
+        "128": "assets/icons/icon128.png"
     },
     "action": {
         "default_icon": {
-            "16": "assets/icons/icon.svg",
-            "48": "assets/icons/icon.svg",
-            "128": "assets/icons/icon.svg"
+            "16": "assets/icons/icon16.png",
+            "48": "assets/icons/icon48.png",
+            "128": "assets/icons/icon128.png"
         },
         "default_title": "OctoGPT - Navigate ChatGPT Prompts"
     }
