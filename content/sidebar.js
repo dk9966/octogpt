@@ -13,6 +13,7 @@ class OctoGPTSidebar {
     this.slab = null;
     this.isVisible = false;
     this.isPinned = false;
+    this.isSettingsMode = false;
     this.prompts = [];
     this.currentPromptIndex = -1;
     this.collapsedPrompts = new Set(); // Track which prompts have collapsed headings
@@ -20,7 +21,7 @@ class OctoGPTSidebar {
       defaultWidth: 200,
       minWidth: 120,
       maxWidth: 400,
-      scrollDuration: 500, // ms, 0 for instant
+      scrollDuration: 100, // ms, 0 for instant
     };
 
     // Resize state
@@ -41,6 +42,8 @@ class OctoGPTSidebar {
     this.handleSidebarMouseEnter = this.handleSidebarMouseEnter.bind(this);
     this.handleSidebarMouseLeave = this.handleSidebarMouseLeave.bind(this);
     this.handleSidebarTransitionEnd = this.handleSidebarTransitionEnd.bind(this);
+    this.toggleSettings = this.toggleSettings.bind(this);
+    this.handleScrollDurationChange = this.handleScrollDurationChange.bind(this);
   }
 
   /**
@@ -75,10 +78,10 @@ class OctoGPTSidebar {
           result.sidebarWidth <= this.config.maxWidth) {
         this.config.defaultWidth = result.sidebarWidth;
       }
-      // Load scroll duration (0-500ms range)
+      // Load scroll duration (0-600ms range)
       if (result.scrollDuration !== undefined && 
           result.scrollDuration >= 0 && 
-          result.scrollDuration <= 500) {
+          result.scrollDuration <= 600) {
         this.config.scrollDuration = result.scrollDuration;
       }
     } catch (error) {
@@ -86,7 +89,7 @@ class OctoGPTSidebar {
       this.isPinned = false;
       this.isVisible = false;
       this.config.defaultWidth = 200;
-      this.config.scrollDuration = 150;
+      this.config.scrollDuration = 100;
     }
   }
 
@@ -129,10 +132,12 @@ class OctoGPTSidebar {
       <div class="octogpt-sidebar__resize-handle" aria-label="Resize sidebar"></div>
       <div class="octogpt-sidebar__container">
         <div class="octogpt-sidebar__header">
-          <div class="octogpt-sidebar__logo">
-            <img class="octogpt-sidebar__logo-icon" src="${chrome.runtime.getURL('assets/icons/icon48.png')}" alt="OctoGPT" />
-            <span class="octogpt-sidebar__logo-text">OctoGPT</span>
-          </div>
+          <button class="octogpt-sidebar__logo-btn" aria-label="Toggle settings">
+            <div class="octogpt-sidebar__logo">
+              <img class="octogpt-sidebar__logo-icon" src="${chrome.runtime.getURL('assets/icons/icon48.png')}" alt="OctoGPT" />
+              <span class="octogpt-sidebar__logo-text">OctoGPT</span>
+            </div>
+          </button>
           <div class="octogpt-sidebar__header-actions">
             <button class="octogpt-sidebar__collapse-all-btn" aria-label="Collapse all headers" title="Collapse all">
               <svg class="octogpt-sidebar__collapse-all-icon" viewBox="0 0 16 16" width="14" height="14">
@@ -153,6 +158,28 @@ class OctoGPTSidebar {
           </div>
           <div class="octogpt-sidebar__empty">
             No prompts found
+          </div>
+          <div class="octogpt-sidebar__settings" style="display: none;">
+            <div class="octogpt-sidebar__settings-section">
+              <label class="octogpt-sidebar__settings-label">Scroll Duration (ms)</label>
+              <div class="octogpt-sidebar__settings-controls">
+                <input type="range" 
+                       class="octogpt-sidebar__settings-slider" 
+                       min="0" 
+                       max="600" 
+                       value="${this.config.scrollDuration}"
+                       aria-label="Scroll duration slider">
+                <input type="number" 
+                       class="octogpt-sidebar__settings-input" 
+                       min="0" 
+                       max="600" 
+                       value="${this.config.scrollDuration}"
+                       aria-label="Scroll duration input">
+              </div>
+              <div class="octogpt-sidebar__settings-hint">
+                Controls animation speed when scrolling to prompts (0 = instant)
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -247,6 +274,24 @@ class OctoGPTSidebar {
         justify-content: space-between;
         padding: 16px;
         background: transparent;
+      }
+
+      .octogpt-sidebar__logo-btn {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        min-width: 0;
+        flex: 1;
+        overflow: hidden;
+        border: none;
+        background: transparent;
+        padding: 0;
+        cursor: pointer;
+        transition: opacity 0.15s ease;
+      }
+
+      .octogpt-sidebar__logo-btn:hover {
+        opacity: 0.7;
       }
 
       .octogpt-sidebar__logo {
@@ -598,6 +643,129 @@ class OctoGPTSidebar {
       :host-context(.dark) .octogpt-sidebar__heading-item:hover .octogpt-sidebar__heading-text {
         color: #ececec;
       }
+
+      /* Settings page */
+      .octogpt-sidebar__settings {
+        padding: 16px;
+      }
+
+      .octogpt-sidebar__settings-section {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .octogpt-sidebar__settings-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #0d0d0d;
+      }
+
+      :host-context(.dark) .octogpt-sidebar__settings-label {
+        color: #ececec;
+      }
+
+      .octogpt-sidebar__settings-controls {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .octogpt-sidebar__settings-slider {
+        flex: 1;
+        height: 4px;
+        border-radius: 2px;
+        background: #e5e5e5;
+        outline: none;
+        -webkit-appearance: none;
+        appearance: none;
+      }
+
+      .octogpt-sidebar__settings-slider::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: #0d0d0d;
+        cursor: pointer;
+        transition: background 0.15s ease;
+      }
+
+      .octogpt-sidebar__settings-slider::-webkit-slider-thumb:hover {
+        background: #333333;
+      }
+
+      .octogpt-sidebar__settings-slider::-moz-range-thumb {
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: #0d0d0d;
+        cursor: pointer;
+        border: none;
+        transition: background 0.15s ease;
+      }
+
+      .octogpt-sidebar__settings-slider::-moz-range-thumb:hover {
+        background: #333333;
+      }
+
+      :host-context(.dark) .octogpt-sidebar__settings-slider {
+        background: #3f3f3f;
+      }
+
+      :host-context(.dark) .octogpt-sidebar__settings-slider::-webkit-slider-thumb {
+        background: #ececec;
+      }
+
+      :host-context(.dark) .octogpt-sidebar__settings-slider::-webkit-slider-thumb:hover {
+        background: #ffffff;
+      }
+
+      :host-context(.dark) .octogpt-sidebar__settings-slider::-moz-range-thumb {
+        background: #ececec;
+      }
+
+      :host-context(.dark) .octogpt-sidebar__settings-slider::-moz-range-thumb:hover {
+        background: #ffffff;
+      }
+
+      .octogpt-sidebar__settings-input {
+        width: 60px;
+        padding: 6px 8px;
+        border: 1px solid #e5e5e5;
+        border-radius: 6px;
+        background: #ffffff;
+        color: #0d0d0d;
+        font-size: 13px;
+        text-align: center;
+        outline: none;
+        transition: border-color 0.15s ease;
+      }
+
+      .octogpt-sidebar__settings-input:focus {
+        border-color: #0d0d0d;
+      }
+
+      :host-context(.dark) .octogpt-sidebar__settings-input {
+        background: #2f2f2f;
+        border-color: #3f3f3f;
+        color: #ececec;
+      }
+
+      :host-context(.dark) .octogpt-sidebar__settings-input:focus {
+        border-color: #ececec;
+      }
+
+      .octogpt-sidebar__settings-hint {
+        font-size: 12px;
+        color: #6b6b6b;
+        line-height: 1.4;
+      }
+
+      :host-context(.dark) .octogpt-sidebar__settings-hint {
+        color: #b4b4b4;
+      }
     `;
     this.shadowRoot.appendChild(style);
   }
@@ -622,6 +790,31 @@ class OctoGPTSidebar {
     const pinBtn = this.shadowRoot.querySelector('.octogpt-sidebar__pin-btn');
     if (pinBtn) {
       pinBtn.addEventListener('click', () => this.togglePin());
+    }
+
+    // Logo button (settings toggle)
+    const logoBtn = this.shadowRoot.querySelector('.octogpt-sidebar__logo-btn');
+    if (logoBtn) {
+      logoBtn.addEventListener('click', this.toggleSettings);
+    }
+
+    // Settings controls
+    const scrollSlider = this.shadowRoot.querySelector('.octogpt-sidebar__settings-slider');
+    const scrollInput = this.shadowRoot.querySelector('.octogpt-sidebar__settings-input');
+    if (scrollSlider && scrollInput) {
+      scrollSlider.addEventListener('input', (e) => {
+        const value = parseInt(e.target.value, 10);
+        scrollInput.value = value;
+        this.handleScrollDurationChange(value);
+      });
+      scrollInput.addEventListener('input', (e) => {
+        let value = parseInt(e.target.value, 10);
+        if (isNaN(value)) value = 0;
+        value = Math.max(0, Math.min(600, value));
+        scrollSlider.value = value;
+        scrollInput.value = value;
+        this.handleScrollDurationChange(value);
+      });
     }
 
     // Sidebar hover events for unpinned mode
@@ -962,27 +1155,59 @@ class OctoGPTSidebar {
 
     const promptList = this.shadowRoot.querySelector('.octogpt-sidebar__prompt-list');
     const emptyState = this.shadowRoot.querySelector('.octogpt-sidebar__empty');
+    const settings = this.shadowRoot.querySelector('.octogpt-sidebar__settings');
 
-    if (!promptList || !emptyState) return;
+    if (!promptList || !emptyState || !settings) return;
 
-    // Clear existing content
-    promptList.innerHTML = '';
+    // Show/hide settings vs prompts based on mode
+    const collapseAllBtn = this.shadowRoot.querySelector('.octogpt-sidebar__collapse-all-btn');
+    
+    if (this.isSettingsMode) {
+      promptList.style.display = 'none';
+      emptyState.style.display = 'none';
+      settings.style.display = 'block';
+      
+      // Hide collapse-all button in settings mode
+      if (collapseAllBtn) {
+        collapseAllBtn.style.display = 'none';
+      }
+      
+      // Update settings controls with current value
+      const scrollSlider = this.shadowRoot.querySelector('.octogpt-sidebar__settings-slider');
+      const scrollInput = this.shadowRoot.querySelector('.octogpt-sidebar__settings-input');
+      if (scrollSlider && scrollInput) {
+        scrollSlider.value = this.config.scrollDuration;
+        scrollInput.value = this.config.scrollDuration;
+      }
+    } else {
+      settings.style.display = 'none';
+      
+      // Show collapse-all button in prompts mode
+      if (collapseAllBtn) {
+        collapseAllBtn.style.display = 'flex';
+      }
+      
+      // Clear existing content
+      promptList.innerHTML = '';
 
-    if (this.prompts.length === 0) {
-      emptyState.style.display = 'block';
-      return;
+      if (this.prompts.length === 0) {
+        emptyState.style.display = 'block';
+        promptList.style.display = 'none';
+        return;
+      }
+
+      emptyState.style.display = 'none';
+      promptList.style.display = 'flex';
+
+      // Render each prompt
+      this.prompts.forEach((prompt, index) => {
+        const promptItem = this.createPromptItem(prompt, index);
+        promptList.appendChild(promptItem);
+      });
+
+      // Update collapse-all button state
+      this.updateCollapseAllButton();
     }
-
-    emptyState.style.display = 'none';
-
-    // Render each prompt
-    this.prompts.forEach((prompt, index) => {
-      const promptItem = this.createPromptItem(prompt, index);
-      promptList.appendChild(promptItem);
-    });
-
-    // Update collapse-all button state
-    this.updateCollapseAllButton();
   }
 
   /**
@@ -1406,6 +1631,22 @@ class OctoGPTSidebar {
     } else {
       this.render();
     }
+  }
+
+  /**
+   * Toggle between settings and prompts view
+   */
+  toggleSettings() {
+    this.isSettingsMode = !this.isSettingsMode;
+    this.render();
+  }
+
+  /**
+   * Handle scroll duration change from settings
+   */
+  async handleScrollDurationChange(value) {
+    this.config.scrollDuration = Math.max(0, Math.min(600, value));
+    await this.saveState();
   }
 
   /**
