@@ -20,6 +20,7 @@ class OctoGPTSidebar {
       defaultWidth: 200,
       minWidth: 120,
       maxWidth: 400,
+      scrollDuration: 0, // ms, 0 for instant
     };
 
     // Resize state
@@ -64,7 +65,7 @@ class OctoGPTSidebar {
    */
   async loadState() {
     try {
-      const result = await chrome.storage.local.get(['sidebarPinned', 'sidebarWidth']);
+      const result = await chrome.storage.local.get(['sidebarPinned', 'sidebarWidth', 'scrollDuration']);
       this.isPinned = result.sidebarPinned !== undefined ? result.sidebarPinned : false;
       // If pinned, start visible; otherwise start hidden
       this.isVisible = this.isPinned;
@@ -74,11 +75,18 @@ class OctoGPTSidebar {
           result.sidebarWidth <= this.config.maxWidth) {
         this.config.defaultWidth = result.sidebarWidth;
       }
+      // Load scroll duration (0-500ms range)
+      if (result.scrollDuration !== undefined && 
+          result.scrollDuration >= 0 && 
+          result.scrollDuration <= 500) {
+        this.config.scrollDuration = result.scrollDuration;
+      }
     } catch (error) {
       log.error('Error loading sidebar state:', error);
       this.isPinned = false;
       this.isVisible = false;
       this.config.defaultWidth = 200;
+      this.config.scrollDuration = 150;
     }
   }
 
@@ -90,6 +98,7 @@ class OctoGPTSidebar {
       await chrome.storage.local.set({
         sidebarPinned: this.isPinned,
         sidebarWidth: this.config.defaultWidth,
+        scrollDuration: this.config.scrollDuration,
       });
     } catch (error) {
       log.error('Error saving sidebar state:', error);
@@ -1273,7 +1282,7 @@ class OctoGPTSidebar {
       const elementOffsetInContainer = scrollContainer.scrollTop + elementRect.top - containerRect.top;
       const targetScroll = elementOffsetInContainer - (containerRect.height / 2) + (elementRect.height / 2);
 
-      this.smoothScrollTo(scrollContainer, Math.max(0, targetScroll), 150);
+      this.smoothScrollTo(scrollContainer, Math.max(0, targetScroll), this.config.scrollDuration);
     } else {
       // Fallback to scrollIntoView if container not found
       element.scrollIntoView({ behavior: 'smooth', block: 'center' });
