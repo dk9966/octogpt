@@ -11,12 +11,14 @@ class OctoGPT {
     this.prompts = [];
     this.isInitialized = false;
     this.debounceTimer = null;
+    this.streamingPollTimer = null;
     this.lastUpdateTime = 0;
 
     // Configuration
     this.config = {
       debounceDelay: 300, // ms to wait before re-parsing
       minUpdateInterval: 500, // minimum time between updates
+      streamingPollInterval: 800, // ms between polls during streaming
     };
   }
 
@@ -164,6 +166,37 @@ class OctoGPT {
       }
     } else {
       log.info('No prompts found in current conversation');
+    }
+
+    // If a response is still streaming, schedule another extraction to catch new headings
+    this.scheduleStreamingPoll();
+  }
+
+  /**
+   * Check if any response is currently streaming
+   */
+  isStreaming() {
+    // ChatGPT adds streaming indicators while generating
+    const streamingIndicators = document.querySelectorAll(
+      '[class*="result-streaming"], [class*="streaming"], [data-testid="stop-button"]'
+    );
+    return streamingIndicators.length > 0;
+  }
+
+  /**
+   * Schedule continued polling while streaming to catch new headings in real-time
+   */
+  scheduleStreamingPoll() {
+    // Clear any existing poll timer
+    clearTimeout(this.streamingPollTimer);
+
+    if (this.isStreaming()) {
+      log.info('Streaming detected, scheduling poll for new headings...');
+      this.streamingPollTimer = setTimeout(() => {
+        // Force update by resetting throttle (we want to capture new headings)
+        this.lastUpdateTime = 0;
+        this.extractAndLog();
+      }, this.config.streamingPollInterval);
     }
   }
 
@@ -340,6 +373,7 @@ class OctoGPT {
     }
 
     clearTimeout(this.debounceTimer);
+    clearTimeout(this.streamingPollTimer);
 
     log.info('Cleaned up');
   }
