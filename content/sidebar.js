@@ -1273,14 +1273,37 @@ class OctoGPTSidebar {
       const elementOffsetInContainer = scrollContainer.scrollTop + elementRect.top - containerRect.top;
       const targetScroll = elementOffsetInContainer - (containerRect.height / 2) + (elementRect.height / 2);
 
-      scrollContainer.scrollTo({
-        top: Math.max(0, targetScroll),
-        behavior: 'smooth'
-      });
+      this.smoothScrollTo(scrollContainer, Math.max(0, targetScroll), 150);
     } else {
       // Fallback to scrollIntoView if container not found
       element.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }
+  }
+
+  /**
+   * Custom smooth scroll with configurable duration
+   * Uses easeOutCubic for natural deceleration
+   */
+  smoothScrollTo(container, targetTop, duration) {
+    const startTop = container.scrollTop;
+    const distance = targetTop - startTop;
+    const startTime = performance.now();
+
+    const easeOutCubic = (t) => 1 - Math.pow(1 - t, 3);
+
+    const step = (currentTime) => {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = easeOutCubic(progress);
+
+      container.scrollTop = startTop + distance * eased;
+
+      if (progress < 1) {
+        requestAnimationFrame(step);
+      }
+    };
+
+    requestAnimationFrame(step);
   }
 
   /**
