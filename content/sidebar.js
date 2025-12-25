@@ -131,6 +131,7 @@ class OctoGPTSidebar {
         <div class="octogpt-sidebar__header">
           <div class="octogpt-sidebar__logo">
             <img class="octogpt-sidebar__logo-icon" src="${chrome.runtime.getURL('assets/icons/icon48.png')}" alt="OctoGPT" />
+            <span class="octogpt-sidebar__logo-text">OctoGPT</span>
           </div>
           <div class="octogpt-sidebar__header-actions">
             <button class="octogpt-sidebar__collapse-all-btn" aria-label="Collapse all headers" title="Collapse all">
@@ -251,17 +252,37 @@ class OctoGPTSidebar {
       .octogpt-sidebar__logo {
         display: flex;
         align-items: center;
+        gap: 8px;
+        min-width: 0;
+        flex: 1;
+        overflow: hidden;
       }
 
       .octogpt-sidebar__logo-icon {
         width: 24px;
         height: 24px;
+        flex-shrink: 0;
+      }
+
+      .octogpt-sidebar__logo-text {
+        font-weight: 600;
+        font-size: 14px;
+        letter-spacing: -0.2px;
+        color: #0d0d0d;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      :host-context(.dark) .octogpt-sidebar__logo-text {
+        color: #ececec;
       }
 
       .octogpt-sidebar__header-actions {
         display: flex;
         align-items: center;
         gap: 4px;
+        flex-shrink: 0;
       }
 
       .octogpt-sidebar__collapse-all-btn {
