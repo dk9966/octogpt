@@ -7,7 +7,7 @@
  * Debug logging configuration
  * Set to true to enable console output
  */
-const DEBUG = true;
+const DEBUG = false;
 
 const log = {
   info: (...args) => DEBUG && console.log('[OctoGPT]', ...args),
