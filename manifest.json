@@ -6,10 +6,6 @@
     "permissions": [
         "storage"
     ],
-    "host_permissions": [
-        "https://chat.openai.com/*",
-        "https://chatgpt.com/*"
-    ],
     "content_scripts": [
         {
             "matches": [
