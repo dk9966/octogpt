@@ -667,12 +667,14 @@ class OctoGPTSidebar {
 
       .octogpt-sidebar__settings-controls {
         display: flex;
+        flex-wrap: wrap;
         align-items: center;
-        gap: 12px;
+        gap: 8px 12px;
       }
 
       .octogpt-sidebar__settings-slider {
-        flex: 1;
+        flex: 1 1 80px;
+        min-width: 0;
         height: 4px;
         border-radius: 2px;
         background: #e5e5e5;
@@ -731,7 +733,9 @@ class OctoGPTSidebar {
       }
 
       .octogpt-sidebar__settings-input {
-        width: 60px;
+        flex: 1 1 60px;
+        min-width: 60px;
+        max-width: 100%;
         padding: 6px 8px;
         border: 1px solid #e5e5e5;
         border-radius: 6px;
