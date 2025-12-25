@@ -222,6 +222,13 @@ class ChatGPTParser {
         if (nextTurn) {
             const nextTurnId = nextTurn.getAttribute('data-testid');
             const assistantInNext = nextTurn.querySelector('[data-message-author-role="assistant"]');
+            // #region agent log
+            const isStreaming = nextTurn.querySelector('[class*="result-streaming"], [class*="streaming"]');
+            const textPreview = nextTurn.textContent?.substring(0, 100);
+            const h2Count = nextTurn.querySelectorAll('h2').length;
+            const h3Count = nextTurn.querySelectorAll('h3').length;
+            fetch('http://127.0.0.1:7242/ingest/355f618a-e6f2-482b-9421-d8db93173052',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'parser.js:extractAssistantHeadings',message:'Checking assistant turn',data:{userTurnId,nextTurnId,hasAssistant:!!assistantInNext,isStreaming:!!isStreaming,h2Count,h3Count,textPreview},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A,B'})}).catch(()=>{});
+            // #endregion
             if (assistantInNext) {
                 log.info(`Found assistant in next turn: ${nextTurnId}`);
                 assistantContainer = nextTurn;
@@ -240,12 +247,14 @@ class ChatGPTParser {
 
     /**
      * Extract headings from a DOM element
-     * Falls back through h2 -> h3 -> h4 -> h5 -> h6 if none found at higher levels
+     * Falls back through h2 -> h3 -> h4 -> h5 if none found at higher levels
+     * Excludes h6 since it's rarely used for content and ChatGPT uses it for UI labels
      * Stores turn ID for re-querying later (DOM elements can become stale after React re-renders)
      */
     extractHeadingsFromElement(container) {
         const turnId = container.getAttribute('data-testid');
-        const headingLevels = ['h2', 'h3', 'h4', 'h5', 'h6'];
+        // Stop at h5 - h6 is typically UI labels (e.g., ChatGPT's "ChatGPT said:" accessibility text)
+        const headingLevels = ['h2', 'h3', 'h4', 'h5'];
         
         for (const level of headingLevels) {
             const headings = container.querySelectorAll(level);
@@ -256,11 +265,17 @@ class ChatGPTParser {
                     turnId: turnId,
                     index: idx,
                 }));
+                // #region agent log
+                fetch('http://127.0.0.1:7242/ingest/355f618a-e6f2-482b-9421-d8db93173052',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'parser.js:extractHeadingsFromElement',message:'Found headings',data:{turnId,level,count:result.length,texts:result.map(h=>h.text)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A,E',runId:'post-fix'})}).catch(()=>{});
+                // #endregion
                 log.info(`Extracted ${level} headings:`, result.map(h => h.text));
                 return result;
             }
         }
 
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/355f618a-e6f2-482b-9421-d8db93173052',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'parser.js:extractHeadingsFromElement',message:'No headings found',data:{turnId,containerText:container.textContent?.substring(0,150)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A,E',runId:'post-fix'})}).catch(()=>{});
+        // #endregion
         log.info('No headings found');
         return [];
     }
