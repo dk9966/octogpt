@@ -39,5 +39,11 @@
             "128": "assets/icons/icon128.png"
         },
         "default_title": "OctoGPT - Navigate ChatGPT Prompts"
-    }
+    },
+    "web_accessible_resources": [
+        {
+            "resources": ["assets/icons/*"],
+            "matches": ["https://chat.openai.com/*", "https://chatgpt.com/*"]
+        }
+    ]
 }
