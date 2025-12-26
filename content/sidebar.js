@@ -1261,6 +1261,10 @@ class OctoGPTSidebar {
     const prevClass = hasPrev ? 'octogpt-sidebar__prompt-item--has-prev' : '';
     const nextClass = hasNext ? 'octogpt-sidebar__prompt-item--has-next' : '';
     const hasHeadings = prompt.headings && prompt.headings.length > 0;
+    // If prompt is generating, ensure headers are shown (not collapsed)
+    if (prompt.isGenerating && hasHeadings) {
+      this.collapsedPrompts.delete(index);
+    }
     const isCollapsed = this.collapsedPrompts.has(index);
 
     item.className = `octogpt-sidebar__prompt-item ${activeClass} ${prevClass} ${nextClass}`;
