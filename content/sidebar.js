@@ -274,7 +274,9 @@ class OctoGPTSidebar {
       }
 
       :host-context(.dark) .octogpt-sidebar__resize-handle:hover,
-      :host-context(.dark) .octogpt-sidebar__resize-handle--active {
+      :host-context(.dark) .octogpt-sidebar__resize-handle--active,
+      :host-context(.dark-theme) .octogpt-sidebar__resize-handle:hover,
+      :host-context(.dark-theme) .octogpt-sidebar__resize-handle--active {
         background: rgba(255, 255, 255, 0.1);
       }
 
@@ -289,7 +291,8 @@ class OctoGPTSidebar {
         color: #0d0d0d;
       }
 
-      :host-context(.dark) .octogpt-sidebar__container {
+      :host-context(.dark) .octogpt-sidebar__container,
+      :host-context(.dark-theme) .octogpt-sidebar__container {
         background: #212121;
         border-left-color: #2f2f2f;
         color: #ececec;
@@ -346,7 +349,8 @@ class OctoGPTSidebar {
         text-overflow: ellipsis;
       }
 
-      :host-context(.dark) .octogpt-sidebar__logo-text {
+      :host-context(.dark) .octogpt-sidebar__logo-text,
+      :host-context(.dark-theme) .octogpt-sidebar__logo-text {
         color: #ececec;
       }
 
@@ -376,11 +380,13 @@ class OctoGPTSidebar {
         color: #0d0d0d;
       }
 
-      :host-context(.dark) .octogpt-sidebar__collapse-all-btn {
+      :host-context(.dark) .octogpt-sidebar__collapse-all-btn,
+      :host-context(.dark-theme) .octogpt-sidebar__collapse-all-btn {
         color: #b4b4b4;
       }
 
-      :host-context(.dark) .octogpt-sidebar__collapse-all-btn:hover {
+      :host-context(.dark) .octogpt-sidebar__collapse-all-btn:hover,
+      :host-context(.dark-theme) .octogpt-sidebar__collapse-all-btn:hover {
         background: #2f2f2f;
         color: #ececec;
       }
@@ -417,16 +423,19 @@ class OctoGPTSidebar {
         background: #e5e5e5;
       }
 
-      :host-context(.dark) .octogpt-sidebar__pin-btn {
+      :host-context(.dark) .octogpt-sidebar__pin-btn,
+      :host-context(.dark-theme) .octogpt-sidebar__pin-btn {
         color: #b4b4b4;
       }
 
-      :host-context(.dark) .octogpt-sidebar__pin-btn:hover {
+      :host-context(.dark) .octogpt-sidebar__pin-btn:hover,
+      :host-context(.dark-theme) .octogpt-sidebar__pin-btn:hover {
         background: #2f2f2f;
         color: #ececec;
       }
 
-      :host-context(.dark) .octogpt-sidebar__pin-btn--active {
+      :host-context(.dark) .octogpt-sidebar__pin-btn--active,
+      :host-context(.dark-theme) .octogpt-sidebar__pin-btn--active {
         color: #ececec;
         background: #3f3f3f;
       }
@@ -463,11 +472,13 @@ class OctoGPTSidebar {
         background: rgba(0, 0, 0, 0.2);
       }
 
-      :host-context(.dark) .octogpt-sidebar__content::-webkit-scrollbar-thumb {
+      :host-context(.dark) .octogpt-sidebar__content::-webkit-scrollbar-thumb,
+      :host-context(.dark-theme) .octogpt-sidebar__content::-webkit-scrollbar-thumb {
         background: rgba(255, 255, 255, 0.1);
       }
 
-      :host-context(.dark) .octogpt-sidebar__content::-webkit-scrollbar-thumb:hover {
+      :host-context(.dark) .octogpt-sidebar__content::-webkit-scrollbar-thumb:hover,
+      :host-context(.dark-theme) .octogpt-sidebar__content::-webkit-scrollbar-thumb:hover {
         background: rgba(255, 255, 255, 0.2);
       }
 
@@ -507,11 +518,13 @@ class OctoGPTSidebar {
         background: #e5e5e5;
       }
 
-      :host-context(.dark) .octogpt-sidebar__prompt-item:hover {
+      :host-context(.dark) .octogpt-sidebar__prompt-item:hover,
+      :host-context(.dark-theme) .octogpt-sidebar__prompt-item:hover {
         background: #2f2f2f;
       }
 
-      :host-context(.dark) .octogpt-sidebar__prompt-item--active {
+      :host-context(.dark) .octogpt-sidebar__prompt-item--active,
+      :host-context(.dark-theme) .octogpt-sidebar__prompt-item--active {
         background: #3f3f3f;
       }
 
@@ -527,7 +540,8 @@ class OctoGPTSidebar {
         white-space: nowrap;
       }
 
-      :host-context(.dark) .octogpt-sidebar__prompt-text {
+      :host-context(.dark) .octogpt-sidebar__prompt-text,
+      :host-context(.dark-theme) .octogpt-sidebar__prompt-text {
         color: #ececec;
       }
 
@@ -553,7 +567,8 @@ class OctoGPTSidebar {
         color: #0d0d0d;
       }
 
-      :host-context(.dark) .octogpt-sidebar__branch-btn:hover {
+      :host-context(.dark) .octogpt-sidebar__branch-btn:hover,
+      :host-context(.dark-theme) .octogpt-sidebar__branch-btn:hover {
         color: #ececec;
       }
 
@@ -565,7 +580,8 @@ class OctoGPTSidebar {
         display: none;
       }
 
-      :host-context(.dark) .octogpt-sidebar__empty {
+      :host-context(.dark) .octogpt-sidebar__empty,
+      :host-context(.dark-theme) .octogpt-sidebar__empty {
         color: #b4b4b4;
       }
 
@@ -596,7 +612,8 @@ class OctoGPTSidebar {
         color: #0d0d0d;
       }
 
-      :host-context(.dark) .octogpt-sidebar__toggle-btn:hover {
+      :host-context(.dark) .octogpt-sidebar__toggle-btn:hover,
+      :host-context(.dark-theme) .octogpt-sidebar__toggle-btn:hover {
         color: #ececec;
       }
 
@@ -628,7 +645,8 @@ class OctoGPTSidebar {
         pointer-events: none;
       }
 
-      :host-context(.dark) .octogpt-sidebar__headings {
+      :host-context(.dark) .octogpt-sidebar__headings,
+      :host-context(.dark-theme) .octogpt-sidebar__headings {
         border-left-color: #3a3a3a;
       }
 
@@ -646,7 +664,8 @@ class OctoGPTSidebar {
         background: #f5f5f5;
       }
 
-      :host-context(.dark) .octogpt-sidebar__heading-item:hover {
+      :host-context(.dark) .octogpt-sidebar__heading-item:hover,
+      :host-context(.dark-theme) .octogpt-sidebar__heading-item:hover {
         background: #2a2a2a;
       }
 
@@ -659,7 +678,8 @@ class OctoGPTSidebar {
         white-space: nowrap;
       }
 
-      :host-context(.dark) .octogpt-sidebar__heading-text {
+      :host-context(.dark) .octogpt-sidebar__heading-text,
+      :host-context(.dark-theme) .octogpt-sidebar__heading-text {
         color: #9a9a9a;
       }
 
@@ -667,7 +687,8 @@ class OctoGPTSidebar {
         color: #0d0d0d;
       }
 
-      :host-context(.dark) .octogpt-sidebar__heading-item:hover .octogpt-sidebar__heading-text {
+      :host-context(.dark) .octogpt-sidebar__heading-item:hover .octogpt-sidebar__heading-text,
+      :host-context(.dark-theme) .octogpt-sidebar__heading-item:hover .octogpt-sidebar__heading-text {
         color: #ececec;
       }
 
@@ -688,7 +709,8 @@ class OctoGPTSidebar {
         color: #0d0d0d;
       }
 
-      :host-context(.dark) .octogpt-sidebar__settings-label {
+      :host-context(.dark) .octogpt-sidebar__settings-label,
+      :host-context(.dark-theme) .octogpt-sidebar__settings-label {
         color: #ececec;
       }
 
@@ -739,23 +761,28 @@ class OctoGPTSidebar {
         background: #333333;
       }
 
-      :host-context(.dark) .octogpt-sidebar__settings-slider {
+      :host-context(.dark) .octogpt-sidebar__settings-slider,
+      :host-context(.dark-theme) .octogpt-sidebar__settings-slider {
         background: #3f3f3f;
       }
 
-      :host-context(.dark) .octogpt-sidebar__settings-slider::-webkit-slider-thumb {
+      :host-context(.dark) .octogpt-sidebar__settings-slider::-webkit-slider-thumb,
+      :host-context(.dark-theme) .octogpt-sidebar__settings-slider::-webkit-slider-thumb {
         background: #ececec;
       }
 
-      :host-context(.dark) .octogpt-sidebar__settings-slider::-webkit-slider-thumb:hover {
+      :host-context(.dark) .octogpt-sidebar__settings-slider::-webkit-slider-thumb:hover,
+      :host-context(.dark-theme) .octogpt-sidebar__settings-slider::-webkit-slider-thumb:hover {
         background: #ffffff;
       }
 
-      :host-context(.dark) .octogpt-sidebar__settings-slider::-moz-range-thumb {
+      :host-context(.dark) .octogpt-sidebar__settings-slider::-moz-range-thumb,
+      :host-context(.dark-theme) .octogpt-sidebar__settings-slider::-moz-range-thumb {
         background: #ececec;
       }
 
-      :host-context(.dark) .octogpt-sidebar__settings-slider::-moz-range-thumb:hover {
+      :host-context(.dark) .octogpt-sidebar__settings-slider::-moz-range-thumb:hover,
+      :host-context(.dark-theme) .octogpt-sidebar__settings-slider::-moz-range-thumb:hover {
         background: #ffffff;
       }
 
@@ -778,13 +805,15 @@ class OctoGPTSidebar {
         border-color: #0d0d0d;
       }
 
-      :host-context(.dark) .octogpt-sidebar__settings-input {
+      :host-context(.dark) .octogpt-sidebar__settings-input,
+      :host-context(.dark-theme) .octogpt-sidebar__settings-input {
         background: #2f2f2f;
         border-color: #3f3f3f;
         color: #ececec;
       }
 
-      :host-context(.dark) .octogpt-sidebar__settings-input:focus {
+      :host-context(.dark) .octogpt-sidebar__settings-input:focus,
+      :host-context(.dark-theme) .octogpt-sidebar__settings-input:focus {
         border-color: #ececec;
       }
 
@@ -794,7 +823,8 @@ class OctoGPTSidebar {
         line-height: 1.4;
       }
 
-      :host-context(.dark) .octogpt-sidebar__settings-hint {
+      :host-context(.dark) .octogpt-sidebar__settings-hint,
+      :host-context(.dark-theme) .octogpt-sidebar__settings-hint {
         color: #b4b4b4;
       }
     `;

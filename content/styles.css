@@ -72,18 +72,21 @@
     pointer-events: none;
 }
 
-/* Dark mode - ChatGPT uses .dark class on html */
-.dark .octogpt-slab {
+/* Dark mode - ChatGPT uses .dark class on html, Gemini uses .dark-theme on body */
+.dark .octogpt-slab,
+.dark-theme .octogpt-slab {
     background: #2f2f2f;
     border-color: #3f3f3f;
     box-shadow: -2px 0 8px rgba(0, 0, 0, 0.3);
 }
 
-.dark .octogpt-slab__arrow {
+.dark .octogpt-slab__arrow,
+.dark-theme .octogpt-slab__arrow {
     color: #b4b4b4;
 }
 
-.dark .octogpt-slab:hover .octogpt-slab__arrow {
+.dark .octogpt-slab:hover .octogpt-slab__arrow,
+.dark-theme .octogpt-slab:hover .octogpt-slab__arrow {
     color: #ececec;
 }
 
