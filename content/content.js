@@ -162,9 +162,6 @@ class OctoGPT {
 
     // Throttle updates
     if (now - this.lastUpdateTime < this.config.minUpdateInterval) {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/355f618a-e6f2-482b-9421-d8db93173052',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'content.js:extractAndLog',message:'Throttled - skipping update',data:{timeSinceLastUpdate:now-this.lastUpdateTime},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'C'})}).catch(()=>{});
-      // #endregion
       return;
     }
 
@@ -179,11 +176,6 @@ class OctoGPT {
     if (formattedPrompts.length > 0 && this.isStreaming()) {
       formattedPrompts[formattedPrompts.length - 1].isGenerating = true;
     }
-
-    // #region agent log
-    const headingsSummary = formattedPrompts.map((p,i) => ({idx:i,preview:p.display?.substring(0,20),headingCount:p.headings?.length||0,headingTexts:p.headings?.map(h=>h.text)}));
-    fetch('http://127.0.0.1:7242/ingest/355f618a-e6f2-482b-9421-d8db93173052',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'content.js:extractAndLog',message:'Extraction complete',data:{promptCount:formattedPrompts.length,headingsSummary},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A,B,C'})}).catch(()=>{});
-    // #endregion
 
     this.prompts = formattedPrompts;
 
@@ -353,13 +345,6 @@ class OctoGPT {
 
       const isMessage = hasMessageRole || hasConversationTurn || hasMessageContent;
       
-      // #region agent log
-      if (isMessage) {
-        const nodeInfo = node.getAttribute?.('data-testid') || node.tagName;
-        fetch('http://127.0.0.1:7242/ingest/355f618a-e6f2-482b-9421-d8db93173052',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'content.js:isMessageNode',message:'Message node detected',data:{nodeInfo,hasMessageRole,hasConversationTurn,hasMessageContent:!!hasMessageContent},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'D'})}).catch(()=>{});
-      }
-      // #endregion
-
       return isMessage;
     }
   }
@@ -370,14 +355,7 @@ class OctoGPT {
   debouncedUpdate() {
     clearTimeout(this.debounceTimer);
 
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/355f618a-e6f2-482b-9421-d8db93173052',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'content.js:debouncedUpdate',message:'Debounce triggered',data:{debounceDelay:this.config.debounceDelay},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'C'})}).catch(()=>{});
-    // #endregion
-
     this.debounceTimer = setTimeout(() => {
-      // #region agent log
-      fetch('http://127.0.0.1:7242/ingest/355f618a-e6f2-482b-9421-d8db93173052',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'content.js:debouncedUpdate',message:'Debounce executing extractAndLog',data:{},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'C'})}).catch(()=>{});
-      // #endregion
       log.info('Detected changes, updating...');
       this.extractAndLog();
     }, this.config.debounceDelay);

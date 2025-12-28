@@ -369,13 +369,6 @@ class ChatGPTParser extends BaseParser {
         if (nextTurn) {
             const nextTurnId = nextTurn.getAttribute('data-testid');
             const assistantInNext = nextTurn.querySelector('[data-message-author-role="assistant"]');
-            // #region agent log
-            const isStreaming = nextTurn.querySelector('[class*="result-streaming"], [class*="streaming"]');
-            const textPreview = nextTurn.textContent?.substring(0, 100);
-            const h2Count = nextTurn.querySelectorAll('h2').length;
-            const h3Count = nextTurn.querySelectorAll('h3').length;
-            fetch('http://127.0.0.1:7242/ingest/355f618a-e6f2-482b-9421-d8db93173052',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'parser.js:extractAssistantHeadings',message:'Checking assistant turn',data:{userTurnId,nextTurnId,hasAssistant:!!assistantInNext,isStreaming:!!isStreaming,h2Count,h3Count,textPreview},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A,B'})}).catch(()=>{});
-            // #endregion
             if (assistantInNext) {
                 log.info(`Found assistant in next turn: ${nextTurnId}`);
                 assistantContainer = nextTurn;
@@ -412,17 +405,11 @@ class ChatGPTParser extends BaseParser {
                     turnId: turnId,
                     index: idx,
                 }));
-                // #region agent log
-                fetch('http://127.0.0.1:7242/ingest/355f618a-e6f2-482b-9421-d8db93173052',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'parser.js:extractHeadingsFromElement',message:'Found headings',data:{turnId,level,count:result.length,texts:result.map(h=>h.text)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A,E',runId:'post-fix'})}).catch(()=>{});
-                // #endregion
                 log.info(`Extracted ${level} headings:`, result.map(h => h.text));
                 return result;
             }
         }
 
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/355f618a-e6f2-482b-9421-d8db93173052',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'parser.js:extractHeadingsFromElement',message:'No headings found',data:{turnId,containerText:container.textContent?.substring(0,150)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A,E',runId:'post-fix'})}).catch(()=>{});
-        // #endregion
         log.info('No headings found');
         return [];
     }
