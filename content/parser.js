@@ -1,6 +1,6 @@
 /**
  * OctoGPT Parser Module
- * Handles extraction of user prompts from ChatGPT DOM
+ * Handles extraction of user prompts from ChatGPT and Gemini DOM
  */
 
 /**
@@ -17,7 +17,154 @@ const log = {
   groupEnd: () => DEBUG && console.groupEnd(),
 };
 
-class ChatGPTParser {
+/**
+ * Base parser class with common interface
+ * Site-specific parsers extend this class
+ */
+class BaseParser {
+    constructor() {
+        this.prompts = [];
+        this.conversationId = null;
+        this.selectors = {};
+    }
+
+    /**
+     * Get the current conversation ID from URL
+     * Must be implemented by subclasses
+     */
+    getConversationId() {
+        throw new Error('getConversationId() must be implemented by subclass');
+    }
+
+    /**
+     * Extract all user prompts from the current page
+     */
+    extractAllPrompts() {
+        this.conversationId = this.getConversationId();
+        this.prompts = [];
+
+        if (!this.conversationId) {
+            log.info('No conversation detected');
+            return [];
+        }
+
+        const prompts = this.findUserMessages();
+        this.prompts = prompts;
+
+        return prompts;
+    }
+
+    /**
+     * Find all user messages in the DOM
+     * Must be implemented by subclasses
+     */
+    findUserMessages() {
+        throw new Error('findUserMessages() must be implemented by subclass');
+    }
+
+    /**
+     * Extract prompt data from a DOM element
+     * Must be implemented by subclasses
+     */
+    extractPromptData(element, index) {
+        throw new Error('extractPromptData() must be implemented by subclass');
+    }
+
+    /**
+     * Extract headings from assistant response
+     * Must be implemented by subclasses
+     */
+    extractAssistantHeadings(userElement) {
+        throw new Error('extractAssistantHeadings() must be implemented by subclass');
+    }
+
+    /**
+     * Get branch information for a prompt
+     * Must be implemented by subclasses
+     */
+    getBranchInfo(element) {
+        throw new Error('getBranchInfo() must be implemented by subclass');
+    }
+
+    /**
+     * Generate a unique ID for a prompt
+     */
+    generatePromptId(element, index) {
+        return `prompt-${this.conversationId}-${index}`;
+    }
+
+    /**
+     * Clean and normalize text content
+     */
+    cleanText(text) {
+        return text
+            .replace(/\s+/g, ' ')
+            .trim();
+    }
+
+    /**
+     * Generate a preview (first ~12 characters) of the prompt
+     */
+    generatePreview(text, maxLength = 12) {
+        const cleaned = text.trim();
+        if (cleaned.length <= maxLength) {
+            return cleaned;
+        }
+        return cleaned.substring(0, maxLength) + '...';
+    }
+
+    /**
+     * Detect which branch is currently active
+     */
+    detectActiveBranch() {
+        const prompts = this.prompts;
+
+        for (let i = 0; i < prompts.length; i++) {
+            const prompt = prompts[i];
+
+            if (prompt.isEdited) {
+                prompt.isBranchPoint = true;
+
+                for (let j = i + 1; j < prompts.length; j++) {
+                    prompts[j].inBranch = true;
+                    prompts[j].branchStartIndex = i;
+                }
+            }
+        }
+
+        return prompts;
+    }
+
+    /**
+     * Format prompts for display with branch indicators
+     */
+    formatPromptsForDisplay() {
+        const prompts = this.detectActiveBranch();
+
+        return prompts.map(prompt => {
+            let displayText = prompt.preview;
+
+            if (prompt.isBranchPoint) {
+                displayText = `< ${displayText} >`;
+            }
+
+            return {
+                id: prompt.id,
+                display: displayText,
+                text: prompt.text,
+                timestamp: prompt.timestamp,
+                isEdited: prompt.isEdited,
+                isBranchPoint: prompt.isBranchPoint,
+                inBranch: prompt.inBranch,
+                branchInfo: prompt.branchInfo,
+                element: prompt.element,
+                headings: prompt.headings,
+            };
+        });
+    }
+}
+
+class ChatGPTParser extends BaseParser {
     constructor() {
         this.prompts = [];
         this.conversationId = null;
@@ -381,62 +528,209 @@ class ChatGPTParser {
         return `prompt-${this.conversationId}-${index}`;
     }
 
-    /**
-     * Detect which branch is currently active
-     */
-    detectActiveBranch() {
-        // The active branch is the one currently visible/selected
-        // We'll track edited prompts and their subsequent messages
-        const prompts = this.prompts;
+}
 
-        for (let i = 0; i < prompts.length; i++) {
-            const prompt = prompts[i];
-
-            if (prompt.isEdited) {
-                // Mark this as the branch point
-                prompt.isBranchPoint = true;
-
-                // All subsequent prompts are part of this branch
-                for (let j = i + 1; j < prompts.length; j++) {
-                    prompts[j].inBranch = true;
-                    prompts[j].branchStartIndex = i;
-                }
-            }
-        }
-
-        return prompts;
+/**
+ * Gemini parser implementation
+ */
+class GeminiParser extends BaseParser {
+    constructor() {
+        super();
+        this.selectors = {
+            conversationContainer: '.conversation-container',
+            userMessages: 'user-query',
+            assistantMessages: 'model-response',
+            userQueryText: '.query-text, .query-text-line',
+            assistantContent: '.model-response-text .markdown, .markdown-main-panel',
+        };
     }
 
     /**
-     * Format prompts for display with branch indicators
+     * Get the current conversation ID from URL
+     * Gemini URLs: /share/{id} or /app/{id}
      */
-    formatPromptsForDisplay() {
-        const prompts = this.detectActiveBranch();
+    getConversationId() {
+        const shareMatch = window.location.pathname.match(/\/share\/([a-zA-Z0-9-]+)/);
+        if (shareMatch) return shareMatch[1];
+        
+        const appMatch = window.location.pathname.match(/\/app\/([a-zA-Z0-9-]+)/);
+        if (appMatch) return appMatch[1];
+        
+        return null;
+    }
 
-        return prompts.map(prompt => {
-            let displayText = prompt.preview;
+    /**
+     * Find all user messages in the DOM
+     */
+    findUserMessages() {
+        const messages = [];
+        const userElements = document.querySelectorAll(this.selectors.userMessages);
 
-            // Add angle brackets for edited prompts (branch points)
-            if (prompt.isBranchPoint) {
-                displayText = `< ${displayText} >`;
+        userElements.forEach((element, index) => {
+            const promptData = this.extractPromptData(element, index);
+            if (promptData) {
+                messages.push(promptData);
+            }
+        });
+
+        return messages;
+    }
+
+    /**
+     * Extract prompt data from a user-query element
+     */
+    extractPromptData(element, index) {
+        try {
+            const textContent = this.getMessageText(element);
+
+            if (!textContent || textContent.trim().length === 0) {
+                return null;
             }
 
-            return {
-                id: prompt.id,
-                display: displayText,
-                text: prompt.text,
-                timestamp: prompt.timestamp,
-                isEdited: prompt.isEdited,
-                isBranchPoint: prompt.isBranchPoint,
-                inBranch: prompt.inBranch,
-                branchInfo: prompt.branchInfo,
-                element: prompt.element,
-                headings: prompt.headings,
+            const branchInfo = this.getBranchInfo(element);
+            const isEdited = branchInfo?.hasBranches ?? false;
+
+            const headings = this.extractAssistantHeadings(element);
+
+            log.info(`Prompt ${index}: "${textContent.substring(0, 30)}..." -> ${headings.length} headings`);
+            if (headings.length > 0) {
+                log.info(`  Headings for prompt ${index}:`, headings.map(h => h.text));
+            }
+
+            const promptData = {
+                id: this.generatePromptId(element, index),
+                index: index,
+                text: textContent,
+                preview: this.generatePreview(textContent),
+                timestamp: Date.now(),
+                isEdited: isEdited,
+                branchInfo: branchInfo,
+                element: element,
+                headings: headings,
             };
-        });
+
+            return promptData;
+        } catch (error) {
+            log.error('Error extracting prompt data:', error);
+            return null;
+        }
+    }
+
+    /**
+     * Get the text content from a user-query element
+     */
+    getMessageText(element) {
+        // Look for query-text or query-text-line
+        const textContainer = element.querySelector(this.selectors.userQueryText);
+        if (textContainer) {
+            return this.cleanText(textContainer.textContent);
+        }
+
+        // Fallback to direct text content
+        const text = element.textContent;
+        if (text) {
+            return this.cleanText(text);
+        }
+
+        return '';
+    }
+
+    /**
+     * Extract headings from the assistant response following a user message
+     */
+    extractAssistantHeadings(userElement) {
+        // Find the conversation container containing this user message
+        const conversationContainer = userElement.closest(this.selectors.conversationContainer);
+        if (!conversationContainer) {
+            log.info('No conversation container found for heading extraction');
+            return [];
+        }
+
+        const containerId = conversationContainer.id || conversationContainer.getAttribute('id');
+        log.info(`Conversation container: ${containerId}`);
+
+        // Find the model-response in the same container or next sibling
+        let assistantContainer = conversationContainer.querySelector(this.selectors.assistantMessages);
+        
+        // If not found in same container, check next sibling conversation-container
+        if (!assistantContainer) {
+            const nextContainer = conversationContainer.nextElementSibling;
+            if (nextContainer && nextContainer.classList.contains('conversation-container')) {
+                assistantContainer = nextContainer.querySelector(this.selectors.assistantMessages);
+            }
+        }
+
+        if (!assistantContainer) {
+            log.info('No assistant response found for this user message');
+            return [];
+        }
+
+        return this.extractHeadingsFromElement(assistantContainer, containerId);
+    }
+
+    /**
+     * Extract headings from a model-response element
+     */
+    extractHeadingsFromElement(container, containerId) {
+        // Find the markdown content area
+        const markdownContainer = container.querySelector(this.selectors.assistantContent);
+        if (!markdownContainer) {
+            log.info('No markdown container found');
+            return [];
+        }
+
+        const headingLevels = ['h2', 'h3', 'h4', 'h5'];
+        
+        for (const level of headingLevels) {
+            const headings = markdownContainer.querySelectorAll(level);
+            if (headings.length > 0) {
+                const result = Array.from(headings).map((h, idx) => ({
+                    level: level,
+                    text: h.textContent.trim(),
+                    turnId: containerId,
+                    index: idx,
+                }));
+                log.info(`Extracted ${level} headings:`, result.map(h => h.text));
+                return result;
+            }
+        }
+
+        log.info('No headings found');
+        return [];
+    }
+
+    /**
+     * Get branch information for a prompt
+     * Gemini has edit functionality but may not have branch navigation like ChatGPT
+     */
+    getBranchInfo(element) {
+        // Check for edit button (indicates editing capability)
+        const editButton = element.querySelector('[data-test-id="prompt-edit-button"]');
+        
+        if (editButton) {
+            // Gemini may have different branch UI - for now, just indicate editing is possible
+            return { hasBranches: false, hasEdit: true };
+        }
+
+        return { hasBranches: false };
+    }
+
+    /**
+     * Generate a unique ID for a prompt
+     */
+    generatePromptId(element, index) {
+        // Try to use conversation container ID
+        const container = element.closest(this.selectors.conversationContainer);
+        if (container && container.id) {
+            return container.id;
+        }
+
+        return super.generatePromptId(element, index);
     }
 }
 
 // Export for use in content script
 window.ChatGPTParser = ChatGPTParser;
+window.GeminiParser = GeminiParser;
+window.BaseParser = BaseParser;
 

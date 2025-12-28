@@ -1,11 +1,12 @@
 /**
  * OctoGPT Content Script
- * Main entry point that runs on ChatGPT pages
+ * Main entry point that runs on ChatGPT and Gemini pages
  */
 
 class OctoGPT {
   constructor() {
-    this.parser = new ChatGPTParser();
+    this.parser = null; // Will be set based on detected site
+    this.site = null; // 'chatgpt' or 'gemini'
     this.sidebar = null;
     this.observer = null;
     this.prompts = [];
@@ -23,23 +24,65 @@ class OctoGPT {
   }
 
   /**
+   * Detect which site we're on
+   */
+  detectSite() {
+    const hostname = window.location.hostname;
+    const pathname = window.location.pathname;
+
+    if (hostname.includes('gemini.google.com') || hostname.includes('aistudio.google.com')) {
+      return 'gemini';
+    }
+    
+    if (hostname.includes('chat.openai.com') || hostname.includes('chatgpt.com')) {
+      return 'chatgpt';
+    }
+
+    // Default fallback based on URL patterns
+    if (pathname.includes('/share/') || pathname.includes('/app/')) {
+      return 'gemini';
+    }
+
+    return 'chatgpt'; // Default fallback
+  }
+
+  /**
    * Initialize the extension
    */
   async init() {
     if (this.isInitialized) return;
 
-    log.info('Waiting for ChatGPT to be ready...');
+    // Detect site and initialize appropriate parser
+    this.site = this.detectSite();
+    
+    if (this.site === 'gemini') {
+      if (typeof GeminiParser === 'undefined') {
+        log.error('GeminiParser not available');
+        return;
+      }
+      this.parser = new GeminiParser();
+      log.info('Detected Gemini, initializing Gemini parser...');
+    } else {
+      if (typeof ChatGPTParser === 'undefined') {
+        log.error('ChatGPTParser not available');
+        return;
+      }
+      this.parser = new ChatGPTParser();
+      log.info('Detected ChatGPT, initializing ChatGPT parser...');
+    }
 
-    // Wait for ChatGPT DOM elements to be present
+    log.info(`Waiting for ${this.site} to be ready...`);
+
+    // Wait for site-specific DOM elements to be present
     await this.waitForReady();
 
-    log.info('ChatGPT ready, initializing...');
+    log.info(`${this.site} ready, initializing...`);
     await this.setup();
   }
 
   /**
-   * Wait for ChatGPT page to be ready
-   * Checks for specific DOM elements rather than React internals
+   * Wait for page to be ready
+   * Checks for site-specific DOM elements
    */
   waitForReady() {
     return new Promise((resolve) => {
@@ -48,16 +91,23 @@ class OctoGPT {
       const startTime = Date.now();
 
       const isReady = () => {
-        // Need main element
         const main = document.querySelector('main');
         if (!main) return false;
 
-        // Either has conversation content OR has input area (empty/new chat)
-        const hasContent = document.querySelector('[data-testid^="conversation-turn-"]') ||
-                           document.querySelector('[data-message-author-role]');
-        const hasInput = document.querySelector('#prompt-textarea, textarea[placeholder], [contenteditable="true"]');
-
-        return hasContent || hasInput;
+        if (this.site === 'gemini') {
+          // Gemini: check for user-query or model-response or input area
+          const hasContent = document.querySelector('user-query') ||
+                             document.querySelector('model-response') ||
+                             document.querySelector('.conversation-container');
+          const hasInput = document.querySelector('[aria-label*="Enter a prompt" i], [contenteditable="true"][role="textbox"]');
+          return hasContent || hasInput;
+        } else {
+          // ChatGPT: check for conversation turns or input area
+          const hasContent = document.querySelector('[data-testid^="conversation-turn-"]') ||
+                             document.querySelector('[data-message-author-role]');
+          const hasInput = document.querySelector('#prompt-textarea, textarea[placeholder], [contenteditable="true"]');
+          return hasContent || hasInput;
+        }
       };
 
       const check = () => {
@@ -181,11 +231,19 @@ class OctoGPT {
    * Check if any response is currently streaming
    */
   isStreaming() {
-    // ChatGPT adds streaming indicators while generating
-    const streamingIndicators = document.querySelectorAll(
-      '[class*="result-streaming"], [class*="streaming"], [data-testid="stop-button"]'
-    );
-    return streamingIndicators.length > 0;
+    if (this.site === 'gemini') {
+      // Gemini streaming indicators
+      const streamingIndicators = document.querySelectorAll(
+        '[class*="streaming"], [aria-busy="true"], .response-container-header-processing-state:not(:empty)'
+      );
+      return streamingIndicators.length > 0;
+    } else {
+      // ChatGPT streaming indicators
+      const streamingIndicators = document.querySelectorAll(
+        '[class*="result-streaming"], [class*="streaming"], [data-testid="stop-button"]'
+      );
+      return streamingIndicators.length > 0;
+    }
   }
 
   /**
@@ -280,22 +338,30 @@ class OctoGPT {
   isMessageNode(node) {
     if (!node.querySelector) return false;
 
-    // Check for common message indicators
-    const hasMessageRole = node.hasAttribute?.('data-message-author-role');
-    const hasConversationTurn = node.hasAttribute?.('data-testid') &&
-      node.getAttribute('data-testid').startsWith('conversation-turn-');
-    const hasMessageContent = node.querySelector?.('[class*="markdown"], .whitespace-pre-wrap');
+    if (this.site === 'gemini') {
+      // Gemini message indicators
+      const isUserQuery = node.tagName === 'USER-QUERY' || node.querySelector?.('user-query');
+      const isModelResponse = node.tagName === 'MODEL-RESPONSE' || node.querySelector?.('model-response');
+      const isConversationContainer = node.classList?.contains('conversation-container');
+      return isUserQuery || isModelResponse || isConversationContainer;
+    } else {
+      // ChatGPT message indicators
+      const hasMessageRole = node.hasAttribute?.('data-message-author-role');
+      const hasConversationTurn = node.hasAttribute?.('data-testid') &&
+        node.getAttribute('data-testid').startsWith('conversation-turn-');
+      const hasMessageContent = node.querySelector?.('[class*="markdown"], .whitespace-pre-wrap');
 
-    const isMessage = hasMessageRole || hasConversationTurn || hasMessageContent;
-    
-    // #region agent log
-    if (isMessage) {
-      const nodeInfo = node.getAttribute?.('data-testid') || node.tagName;
-      fetch('http://127.0.0.1:7242/ingest/355f618a-e6f2-482b-9421-d8db93173052',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'content.js:isMessageNode',message:'Message node detected',data:{nodeInfo,hasMessageRole,hasConversationTurn,hasMessageContent:!!hasMessageContent},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'D'})}).catch(()=>{});
+      const isMessage = hasMessageRole || hasConversationTurn || hasMessageContent;
+      
+      // #region agent log
+      if (isMessage) {
+        const nodeInfo = node.getAttribute?.('data-testid') || node.tagName;
+        fetch('http://127.0.0.1:7242/ingest/355f618a-e6f2-482b-9421-d8db93173052',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'content.js:isMessageNode',message:'Message node detected',data:{nodeInfo,hasMessageRole,hasConversationTurn,hasMessageContent:!!hasMessageContent},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'D'})}).catch(()=>{});
+      }
+      // #endregion
+
+      return isMessage;
     }
-    // #endregion
-
-    return isMessage;
   }
 
   /**

@@ -10,7 +10,9 @@
         {
             "matches": [
                 "https://chat.openai.com/*",
-                "https://chatgpt.com/*"
+                "https://chatgpt.com/*",
+                "https://gemini.google.com/*",
+                "https://aistudio.google.com/*"
             ],
             "js": [
                 "content/parser.js",
@@ -39,7 +41,12 @@
     "web_accessible_resources": [
         {
             "resources": ["assets/icons/*"],
-            "matches": ["https://chat.openai.com/*", "https://chatgpt.com/*"]
+            "matches": [
+                "https://chat.openai.com/*",
+                "https://chatgpt.com/*",
+                "https://gemini.google.com/*",
+                "https://aistudio.google.com/*"
+            ]
         }
     ]
 }

@@ -17,6 +17,7 @@ class OctoGPTSidebar {
     this.prompts = [];
     this.currentPromptIndex = -1;
     this.collapsedPrompts = new Set(); // Track which prompts have collapsed headings
+    this.site = null; // Will be detected on init
     this.config = {
       defaultWidth: 200,
       minWidth: 120,
@@ -47,9 +48,35 @@ class OctoGPTSidebar {
   }
 
   /**
+   * Detect which site we're on
+   */
+  detectSite() {
+    const hostname = window.location.hostname;
+    const pathname = window.location.pathname;
+
+    if (hostname.includes('gemini.google.com') || hostname.includes('aistudio.google.com')) {
+      return 'gemini';
+    }
+    
+    if (hostname.includes('chat.openai.com') || hostname.includes('chatgpt.com')) {
+      return 'chatgpt';
+    }
+
+    // Default fallback based on URL patterns
+    if (pathname.includes('/share/') || pathname.includes('/app/')) {
+      return 'gemini';
+    }
+
+    return 'chatgpt'; // Default fallback
+  }
+
+  /**
    * Initialize the sidebar
    */
   async init() {
+    // Detect site
+    this.site = this.detectSite();
+
     // Load saved state
     await this.loadState();
 
@@ -934,14 +961,14 @@ class OctoGPTSidebar {
         this.updateVisibility();
       } else {
         // Sidebar already visible, just need to push content now that we're pinned
-        this.adjustChatGPTLayout(this.config.defaultWidth, true);
+        this.adjustSiteLayout(this.config.defaultWidth, true);
       }
       if (this.slab) {
         this.slab.classList.add('octogpt-slab--hidden');
       }
     } else {
       // When unpinning, release content margin (no layout change = no scroll reset)
-      this.adjustChatGPTLayout(0, false);
+      this.adjustSiteLayout(0, false);
       
       // Check if cursor is currently over sidebar
       // If not, hide the sidebar immediately
@@ -997,8 +1024,8 @@ class OctoGPTSidebar {
     this.config.defaultWidth = clampedWidth;
     this.sidebar.style.width = `${clampedWidth}px`;
     
-    // Adjust ChatGPT layout without animation during drag
-    this.adjustChatGPTLayout(clampedWidth, false);
+    // Adjust site layout without animation during drag
+    this.adjustSiteLayout(clampedWidth, false);
   }
 
   /**
@@ -1056,10 +1083,10 @@ class OctoGPTSidebar {
   }
 
   /**
-   * Adjust ChatGPT layout elements to accommodate sidebar
+   * Adjust site layout elements to accommodate sidebar
    * Only pushes content when pinned - unpinned mode is overlay-only
    */
-  adjustChatGPTLayout(width, animate = true) {
+  adjustSiteLayout(width, animate = true) {
     // Only push content when pinned - unpinned sidebar overlays without affecting layout
     if (!this.isPinned) {
       // Clear any existing margin when unpinned
@@ -1108,13 +1135,13 @@ class OctoGPTSidebar {
       }
       // Only push content when pinned
       if (this.isPinned) {
-        this.adjustChatGPTLayout(sidebarWidth, true);
+        this.adjustSiteLayout(sidebarWidth, true);
       }
     } else {
       this.sidebar.classList.remove('octogpt-sidebar--visible');
       // Only adjust layout when pinned - unpinned mode is overlay, no layout changes
       if (this.isPinned) {
-        this.adjustChatGPTLayout(0, false);
+        this.adjustSiteLayout(0, false);
       }
       // Note: slab will be shown via handleSidebarTransitionEnd after animation,
       // EXCEPT on initial load where we need to show it immediately
@@ -1479,11 +1506,26 @@ class OctoGPTSidebar {
    * Re-queries to avoid stale references after React re-renders
    */
   findHeadingElement(heading) {
-    const turn = document.querySelector(`[data-testid="${heading.turnId}"]`);
-    if (!turn) return null;
+    if (this.site === 'gemini') {
+      // Gemini: use conversation container ID
+      const container = document.getElementById(heading.turnId) || 
+                       document.querySelector(`.conversation-container[id="${heading.turnId}"]`);
+      if (!container) return null;
 
-    const headings = turn.querySelectorAll(heading.level);
-    return headings[heading.index] || null;
+      // Find markdown container within model-response
+      const markdownContainer = container.querySelector('.model-response-text .markdown, .markdown-main-panel');
+      if (!markdownContainer) return null;
+
+      const headings = markdownContainer.querySelectorAll(heading.level);
+      return headings[heading.index] || null;
+    } else {
+      // ChatGPT: use data-testid
+      const turn = document.querySelector(`[data-testid="${heading.turnId}"]`);
+      if (!turn) return null;
+
+      const headings = turn.querySelectorAll(heading.level);
+      return headings[heading.index] || null;
+    }
   }
 
   /**
@@ -1516,11 +1558,11 @@ class OctoGPTSidebar {
   }
 
   /**
-   * Scroll to element in ChatGPT's conversation container
-   * Uses direct scroll on the correct container to avoid react-scroll-to-bottom conflicts
+   * Scroll to element in the conversation container
+   * Uses direct scroll on the correct container to avoid conflicts with site-specific scroll libraries
    */
   scrollToElement(element) {
-    // Find ChatGPT's actual scroll container (inside react-scroll-to-bottom)
+    // Find the actual scroll container (site-specific)
     const scrollContainer = this.findScrollContainer();
 
     if (scrollContainer) {
@@ -1572,35 +1614,65 @@ class OctoGPTSidebar {
   }
 
   /**
-   * Find ChatGPT's scroll container
-   * The react-scroll-to-bottom library nests the scrollable element inside
+   * Find the scroll container for the current site
    */
   findScrollContainer() {
-    // Try common patterns for ChatGPT's scroll container
-    const selectors = [
-      'main [class*="react-scroll-to-bottom"] > div',
-      'main [class*="react-scroll-to-bottom--css"]',
-      'main [class*="overflow-y-auto"]'
-    ];
+    if (this.site === 'gemini') {
+      // Gemini scroll container patterns
+      const selectors = [
+        'main [class*="infinite-scroller"]',
+        'main [class*="chat-window-content"]',
+        'main [class*="overflow-y-auto"]',
+        'main [class*="overflow-auto"]'
+      ];
 
-    for (const selector of selectors) {
-      const container = document.querySelector(selector);
-      if (container && container.scrollHeight > container.clientHeight) {
-        return container;
-      }
-    }
-
-    // Fallback: find any scrollable ancestor of a conversation turn
-    const turn = document.querySelector('[data-testid^="conversation-turn-"]');
-    if (turn) {
-      let parent = turn.parentElement;
-      while (parent && parent !== document.body) {
-        const style = getComputedStyle(parent);
-        const isScrollable = style.overflowY === 'auto' || style.overflowY === 'scroll';
-        if (isScrollable && parent.scrollHeight > parent.clientHeight) {
-          return parent;
+      for (const selector of selectors) {
+        const container = document.querySelector(selector);
+        if (container && container.scrollHeight > container.clientHeight) {
+          return container;
         }
-        parent = parent.parentElement;
+      }
+
+      // Fallback: find scrollable ancestor of conversation container
+      const conversationContainer = document.querySelector('.conversation-container');
+      if (conversationContainer) {
+        let parent = conversationContainer.parentElement;
+        while (parent && parent !== document.body) {
+          const style = getComputedStyle(parent);
+          const isScrollable = style.overflowY === 'auto' || style.overflowY === 'scroll';
+          if (isScrollable && parent.scrollHeight > parent.clientHeight) {
+            return parent;
+          }
+          parent = parent.parentElement;
+        }
+      }
+    } else {
+      // ChatGPT scroll container patterns
+      const selectors = [
+        'main [class*="react-scroll-to-bottom"] > div',
+        'main [class*="react-scroll-to-bottom--css"]',
+        'main [class*="overflow-y-auto"]'
+      ];
+
+      for (const selector of selectors) {
+        const container = document.querySelector(selector);
+        if (container && container.scrollHeight > container.clientHeight) {
+          return container;
+        }
+      }
+
+      // Fallback: find any scrollable ancestor of a conversation turn
+      const turn = document.querySelector('[data-testid^="conversation-turn-"]');
+      if (turn) {
+        let parent = turn.parentElement;
+        while (parent && parent !== document.body) {
+          const style = getComputedStyle(parent);
+          const isScrollable = style.overflowY === 'auto' || style.overflowY === 'scroll';
+          if (isScrollable && parent.scrollHeight > parent.clientHeight) {
+            return parent;
+          }
+          parent = parent.parentElement;
+        }
       }
     }
 
