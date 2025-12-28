@@ -1,19 +1,36 @@
 # OctoGPT
 
-A browser extension that adds a sidebar to ChatGPT for navigating your prompts in a conversation.
+A browser extension that adds a navigable sidebar to ChatGPT and Gemini, displaying all prompts and headers in your conversation.
 
 ## Features
 
-- Sidebar showing all your prompts and headers in the current conversation
-- Toggle sidebar with `Cmd/Ctrl + h` or the floating button
-- Light and dark mode support
+- **Sidebar navigation** - View all prompts and headers at a glance
+- **Quick toggle** - Press `Cmd/Ctrl + H` or click the floating button
+- **Smooth scrolling** - Click any item to jump to it in the conversation
+- **Theme support** - Automatically adapts to light and dark modes
+
+## Installation
+
+If OctoGPT is not available on the Chrome Web Store, install it manually:
+
+1. Clone or download this repository
+2. Open your browser's extension management page:
+   - Chrome: `chrome://extensions/`
+   - Firefox: `about:debugging#/runtime/this-firefox`
+3. Enable Developer mode
+4. Load the extension (Chrome: "Load unpacked" | Firefox: "Load Temporary Add-on")
+5. Navigate to [ChatGPT](https://chat.openai.com) or [Gemini](https://gemini.google.com)
 
 ## Usage
 
-1. Navigate to any ChatGPT conversation
-2. Press `Cmd/Ctrl + h` or click the floating button to open the sidebar
-3. Click any prompt or header to scroll to it
+Open any conversation and press `Cmd/Ctrl + H` to toggle the sidebar. Click any prompt or header to navigate directly to it.
 
-## Development
+## Supported Sites
 
-The extension uses Manifest V3 and Shadow DOM for style isolation.
+- chat.openai.com
+- chatgpt.com
+- gemini.google.com
+
+## Technical Details
+
+Built with Manifest V3 and Shadow DOM for style isolation. See `docs/` for detailed documentation.
