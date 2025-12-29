@@ -1,7 +1,7 @@
 {
     "manifest_version": 3,
     "name": "OctoGPT",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "description": "Navigate ChatGPT conversations with a sidebar showing all your prompts",
     "permissions": [
         "storage"
