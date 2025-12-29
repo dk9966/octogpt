@@ -18,6 +18,7 @@ class OctoGPTSidebar {
     this.currentPromptIndex = -1;
     this.collapsedPrompts = new Set(); // Track which prompts have collapsed headings
     this.site = null; // Will be detected on init
+    this.isLoading = true; // Start in loading state
     this.config = {
       defaultWidth: 200,
       minWidth: 120,
@@ -180,10 +181,13 @@ class OctoGPTSidebar {
           </div>
         </div>
         <div class="octogpt-sidebar__content">
-          <div class="octogpt-sidebar__prompt-list" role="list">
+          <div class="octogpt-sidebar__loading">
+            <div class="octogpt-sidebar__loading-spinner"></div>
+          </div>
+          <div class="octogpt-sidebar__prompt-list" role="list" style="display: none;">
             <!-- Prompts will be rendered here -->
           </div>
-          <div class="octogpt-sidebar__empty">
+          <div class="octogpt-sidebar__empty" style="display: none;">
             No prompts found
           </div>
           <div class="octogpt-sidebar__settings" style="display: none;">
@@ -827,6 +831,35 @@ class OctoGPTSidebar {
       :host-context(.dark-theme) .octogpt-sidebar__settings-hint {
         color: #b4b4b4;
       }
+
+      /* Loading indicator */
+      .octogpt-sidebar__loading {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 48px 16px;
+      }
+
+      .octogpt-sidebar__loading-spinner {
+        width: 24px;
+        height: 24px;
+        border: 2px solid #e5e5e5;
+        border-top-color: #0d0d0d;
+        border-radius: 50%;
+        animation: octogpt-spin 0.8s linear infinite;
+      }
+
+      :host-context(.dark) .octogpt-sidebar__loading-spinner,
+      :host-context(.dark-theme) .octogpt-sidebar__loading-spinner {
+        border-color: #3f3f3f;
+        border-top-color: #ececec;
+      }
+
+      @keyframes octogpt-spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
     `;
     this.shadowRoot.appendChild(style);
   }
@@ -1201,9 +1234,29 @@ class OctoGPTSidebar {
   }
 
   /**
+   * Set loading state
+   */
+  setLoading(isLoading) {
+    this.isLoading = isLoading;
+    this.render();
+  }
+
+  /**
    * Update prompts data and re-render
    */
   updatePrompts(prompts) {
+    const prevCount = this.prompts.length;
+    const newCount = prompts?.length || 0;
+    
+    // If we had prompts before and now have 0, likely navigating - show loading
+    if (prevCount > 0 && newCount === 0) {
+      this.isLoading = true;
+    }
+    // Clear loading state when we find prompts
+    if (newCount > 0) {
+      this.isLoading = false;
+    }
+    
     this.prompts = prompts || [];
     this.render();
   }
@@ -1214,16 +1267,18 @@ class OctoGPTSidebar {
   render() {
     if (!this.shadowRoot) return;
 
+    const loading = this.shadowRoot.querySelector('.octogpt-sidebar__loading');
     const promptList = this.shadowRoot.querySelector('.octogpt-sidebar__prompt-list');
     const emptyState = this.shadowRoot.querySelector('.octogpt-sidebar__empty');
     const settings = this.shadowRoot.querySelector('.octogpt-sidebar__settings');
 
-    if (!promptList || !emptyState || !settings) return;
+    if (!loading || !promptList || !emptyState || !settings) return;
 
     // Show/hide settings vs prompts based on mode
     const collapseAllBtn = this.shadowRoot.querySelector('.octogpt-sidebar__collapse-all-btn');
     
     if (this.isSettingsMode) {
+      loading.style.display = 'none';
       promptList.style.display = 'none';
       emptyState.style.display = 'none';
       settings.style.display = 'block';
@@ -1250,6 +1305,16 @@ class OctoGPTSidebar {
       
       // Clear existing content
       promptList.innerHTML = '';
+
+      // Show loading state while waiting for prompts
+      if (this.isLoading && this.prompts.length === 0) {
+        loading.style.display = 'flex';
+        emptyState.style.display = 'none';
+        promptList.style.display = 'none';
+        return;
+      }
+
+      loading.style.display = 'none';
 
       if (this.prompts.length === 0) {
         emptyState.style.display = 'block';

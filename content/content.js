@@ -160,8 +160,15 @@ class OctoGPT {
   extractAndLog() {
     const now = Date.now();
 
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/355f618a-e6f2-482b-9421-d8db93173052',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'content.js:extractAndLog',message:'extractAndLog called',data:{now,lastUpdateTime:this.lastUpdateTime,minInterval:this.config.minUpdateInterval},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H4'})}).catch(()=>{});
+    // #endregion
+
     // Throttle updates
     if (now - this.lastUpdateTime < this.config.minUpdateInterval) {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/355f618a-e6f2-482b-9421-d8db93173052',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'content.js:extractAndLog',message:'throttled, skipping',data:{},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H4'})}).catch(()=>{});
+      // #endregion
       return;
     }
 
@@ -172,6 +179,10 @@ class OctoGPT {
     this.parser.extractAllPrompts();
     const formattedPrompts = this.parser.formatPromptsForDisplay();
 
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/355f618a-e6f2-482b-9421-d8db93173052',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'content.js:extractAndLog',message:'parsed prompts',data:{promptCount:formattedPrompts.length},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H3'})}).catch(()=>{});
+    // #endregion
+
     // Mark the last prompt as generating if streaming is happening
     if (formattedPrompts.length > 0 && this.isStreaming()) {
       formattedPrompts[formattedPrompts.length - 1].isGenerating = true;
@@ -181,6 +192,9 @@ class OctoGPT {
 
     // Update sidebar with new prompts
     if (this.sidebar) {
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/355f618a-e6f2-482b-9421-d8db93173052',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'content.js:extractAndLog',message:'calling sidebar.updatePrompts',data:{promptCount:formattedPrompts.length},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H4'})}).catch(()=>{});
+      // #endregion
       this.sidebar.updatePrompts(formattedPrompts);
     }
 
@@ -314,6 +328,9 @@ class OctoGPT {
       }
 
       if (shouldUpdate) {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/355f618a-e6f2-482b-9421-d8db93173052',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'content.js:mutationObserver',message:'DOM mutation detected, triggering update',data:{},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H3'})}).catch(()=>{});
+        // #endregion
         this.debouncedUpdate();
       }
     };
@@ -392,8 +409,24 @@ class OctoGPT {
         lastUrl = currentUrl;
         log.info('Navigation detected, re-initializing...');
 
+        // #region agent log
+        const hasConvTurns = !!document.querySelector('[data-testid^="conversation-turn-"]');
+        const hasUserMsg = !!document.querySelector('[data-message-author-role="user"]');
+        fetch('http://127.0.0.1:7242/ingest/355f618a-e6f2-482b-9421-d8db93173052',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'content.js:locationchange',message:'Navigation detected, setting loading state',data:{currentUrl,hasConvTurns,hasUserMsg},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H1-fix'})}).catch(()=>{});
+        // #endregion
+
+        // Set loading state immediately when navigating
+        if (this.sidebar) {
+          this.sidebar.setLoading(true);
+        }
+
         // Wait a bit for new content to load
         setTimeout(() => {
+          // #region agent log
+          const hasConvTurns2 = !!document.querySelector('[data-testid^="conversation-turn-"]');
+          const hasUserMsg2 = !!document.querySelector('[data-message-author-role="user"]');
+          fetch('http://127.0.0.1:7242/ingest/355f618a-e6f2-482b-9421-d8db93173052',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'content.js:locationchange',message:'1000ms delay complete',data:{hasConvTurns:hasConvTurns2,hasUserMsg:hasUserMsg2},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H1'})}).catch(()=>{});
+          // #endregion
           this.extractAndLog();
         }, 1000);
       }
