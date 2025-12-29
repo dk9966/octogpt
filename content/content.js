@@ -141,7 +141,7 @@ class OctoGPT {
       await this.sidebar.init();
     }
 
-    // Initial extraction
+    // Initial extraction (will set loading state to 'parsing' if needed)
     this.extractAndLog();
 
     // Setup mutation observer for real-time updates
@@ -152,6 +152,20 @@ class OctoGPT {
 
     this.isInitialized = true;
     log.info('Initialized successfully');
+  }
+
+  /**
+   * Check if conversation content exists in DOM
+   */
+  hasConversationContent() {
+    if (this.site === 'gemini') {
+      return !!(document.querySelector('user-query') || 
+                document.querySelector('model-response') ||
+                document.querySelector('.conversation-container'));
+    } else {
+      return !!(document.querySelector('[data-testid^="conversation-turn-"]') ||
+                document.querySelector('[data-message-author-role]'));
+    }
   }
 
   /**
@@ -166,6 +180,19 @@ class OctoGPT {
     }
 
     this.lastUpdateTime = now;
+
+    // Check if conversation content exists before setting loading state
+    const hasContent = this.hasConversationContent();
+    
+    if (this.sidebar && this.sidebar.isLoading) {
+      if (hasContent) {
+        // Content exists, now parsing
+        this.sidebar.setLoadingState('parsing');
+      } else {
+        // No content yet, still waiting
+        this.sidebar.setLoadingState('waiting');
+      }
+    }
 
     log.info('Extracting prompts...');
 
@@ -182,6 +209,10 @@ class OctoGPT {
     // Update sidebar with new prompts
     if (this.sidebar) {
       this.sidebar.updatePrompts(formattedPrompts);
+      // Clear loading state once we have prompts
+      if (formattedPrompts.length > 0) {
+        this.sidebar.setLoadingState(null);
+      }
     }
 
     // Log results for debugging
@@ -394,15 +425,40 @@ class OctoGPT {
 
         // Set loading state immediately when navigating
         if (this.sidebar) {
-          this.sidebar.setLoading(true);
+          this.sidebar.setLoadingState('waiting');
         }
 
-        // Wait a bit for new content to load
-        setTimeout(() => {
-          this.extractAndLog();
-        }, 1000);
+        // Poll for content to appear, then extract
+        this.waitForContentAndExtract();
       }
     });
+  }
+
+  /**
+   * Wait for conversation content to appear, then extract
+   */
+  waitForContentAndExtract() {
+    const maxWait = 10000; // 10 second max
+    const checkInterval = 100;
+    const startTime = Date.now();
+
+    const check = () => {
+      if (this.hasConversationContent()) {
+        // Content found, extract
+        this.extractAndLog();
+        return;
+      }
+
+      if (Date.now() - startTime > maxWait) {
+        // Timeout, try extracting anyway (might be empty conversation)
+        this.extractAndLog();
+        return;
+      }
+
+      setTimeout(check, checkInterval);
+    };
+
+    check();
   }
 
   /**

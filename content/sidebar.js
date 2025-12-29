@@ -19,6 +19,7 @@ class OctoGPTSidebar {
     this.collapsedPrompts = new Set(); // Track which prompts have collapsed headings
     this.site = null; // Will be detected on init
     this.isLoading = true; // Start in loading state
+    this.loadingState = 'waiting'; // 'waiting' | 'parsing' | null
     this.config = {
       defaultWidth: 200,
       minWidth: 120,
@@ -183,6 +184,7 @@ class OctoGPTSidebar {
         <div class="octogpt-sidebar__content">
           <div class="octogpt-sidebar__loading">
             <div class="octogpt-sidebar__loading-spinner"></div>
+            <div class="octogpt-sidebar__loading-text"></div>
           </div>
           <div class="octogpt-sidebar__prompt-list" role="list" style="display: none;">
             <!-- Prompts will be rendered here -->
@@ -835,9 +837,11 @@ class OctoGPTSidebar {
       /* Loading indicator */
       .octogpt-sidebar__loading {
         display: flex;
+        flex-direction: column;
         align-items: center;
         justify-content: center;
         padding: 48px 16px;
+        gap: 16px;
       }
 
       .octogpt-sidebar__loading-spinner {
@@ -853,6 +857,17 @@ class OctoGPTSidebar {
       :host-context(.dark-theme) .octogpt-sidebar__loading-spinner {
         border-color: #3f3f3f;
         border-top-color: #ececec;
+      }
+
+      .octogpt-sidebar__loading-text {
+        font-size: 13px;
+        color: #6b6b6b;
+        text-align: center;
+      }
+
+      :host-context(.dark) .octogpt-sidebar__loading-text,
+      :host-context(.dark-theme) .octogpt-sidebar__loading-text {
+        color: #b4b4b4;
       }
 
       @keyframes octogpt-spin {
@@ -1238,7 +1253,42 @@ class OctoGPTSidebar {
    */
   setLoading(isLoading) {
     this.isLoading = isLoading;
+    if (!isLoading) {
+      this.loadingState = null;
+    }
     this.render();
+  }
+
+  /**
+   * Set loading state with message
+   * @param {string} state - 'waiting' | 'parsing' | null
+   */
+  setLoadingState(state) {
+    this.loadingState = state;
+    if (state) {
+      this.isLoading = true;
+    }
+    this.updateLoadingText();
+    // Trigger render to ensure loading state is visible
+    if (state) {
+      this.render();
+    }
+  }
+
+  /**
+   * Update loading text based on current state
+   */
+  updateLoadingText() {
+    const loadingText = this.shadowRoot?.querySelector('.octogpt-sidebar__loading-text');
+    if (!loadingText) return;
+
+    const messages = {
+      'waiting': 'Waiting for chat thread',
+      'parsing': 'Parsing chat thread',
+    };
+
+    const message = messages[this.loadingState] || '';
+    loadingText.textContent = message;
   }
 
   /**
@@ -1251,10 +1301,12 @@ class OctoGPTSidebar {
     // If we had prompts before and now have 0, likely navigating - show loading
     if (prevCount > 0 && newCount === 0) {
       this.isLoading = true;
+      this.loadingState = 'waiting';
     }
     // Clear loading state when we find prompts
     if (newCount > 0) {
       this.isLoading = false;
+      this.loadingState = null;
     }
     
     this.prompts = prompts || [];
@@ -1311,6 +1363,7 @@ class OctoGPTSidebar {
         loading.style.display = 'flex';
         emptyState.style.display = 'none';
         promptList.style.display = 'none';
+        this.updateLoadingText();
         return;
       }
 
