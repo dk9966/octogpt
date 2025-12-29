@@ -166,6 +166,7 @@ class BaseParser {
 
 class ChatGPTParser extends BaseParser {
     constructor() {
+        super();
         this.prompts = [];
         this.conversationId = null;
 
