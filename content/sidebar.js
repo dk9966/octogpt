@@ -157,13 +157,18 @@ class OctoGPTSidebar {
     this.shadowRoot = this.sidebar.attachShadow({ mode: 'open' });
 
     // Create HTML structure first
+    // Use blue icon for Gemini, default icon for ChatGPT
+    const iconPath = this.site === 'gemini' 
+      ? chrome.runtime.getURL('assets/icons/icon48-gemini.png')
+      : chrome.runtime.getURL('assets/icons/icon48.png');
+    
     const html = `
       <div class="octogpt-sidebar__resize-handle" aria-label="Resize sidebar"></div>
       <div class="octogpt-sidebar__container">
         <div class="octogpt-sidebar__header">
           <button class="octogpt-sidebar__logo-btn" aria-label="Toggle settings">
             <div class="octogpt-sidebar__logo">
-              <img class="octogpt-sidebar__logo-icon" src="${chrome.runtime.getURL('assets/icons/icon48.png')}" alt="OctoGPT" />
+              <img class="octogpt-sidebar__logo-icon" src="${iconPath}" alt="OctoGPT" />
               <span class="octogpt-sidebar__logo-text">OctoGPT</span>
             </div>
           </button>
