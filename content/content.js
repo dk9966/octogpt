@@ -141,8 +141,23 @@ class OctoGPT {
       await this.sidebar.init();
     }
 
-    // Initial extraction (will set loading state to 'parsing' if needed)
-    this.extractAndLog();
+    // Check if this is a new/empty chat on initial load
+    if (this.hasConversationContent()) {
+      // Content elements exist, try to extract prompts
+      this.extractAndLog();
+      
+      // If no prompts were found despite having content elements,
+      // this might be a new chat with system messages (e.g., ChatGPT welcome)
+      // Use timeout mechanism to determine if it's truly empty
+      if (this.prompts.length === 0) {
+        this.waitForPromptsOrNewChat();
+      }
+    } else {
+      // No content elements at all - definitely a new chat
+      if (this.sidebar) {
+        this.sidebar.setNewChat(true);
+      }
+    }
 
     // Setup mutation observer for real-time updates
     this.setupMutationObserver();
@@ -184,13 +199,19 @@ class OctoGPT {
     // Check if conversation content exists before setting loading state
     const hasContent = this.hasConversationContent();
     
-    if (this.sidebar && this.sidebar.isLoading) {
-      if (hasContent) {
-        // Content exists, now parsing
-        this.sidebar.setLoadingState('parsing');
-      } else {
-        // No content yet, still waiting
+    if (this.sidebar) {
+      // If we're in new chat state but content is appearing, transition to loading
+      // This handles navigation FROM new chat where we can't rely on navigation listener
+      if (this.sidebar.isNewChat && hasContent) {
         this.sidebar.setLoadingState('waiting');
+      }
+      
+      if (this.sidebar.isLoading) {
+        if (hasContent) {
+          // Content exists, now parsing
+          this.sidebar.setLoadingState('parsing');
+        }
+        // Note: Don't set 'waiting' here - let waitForContentAndExtract handle the new chat detection
       }
     }
 
@@ -208,6 +229,12 @@ class OctoGPT {
 
     // Update sidebar with new prompts
     if (this.sidebar) {
+      // If no content and no prompts while loading, this is a new chat - detect immediately
+      if (!hasContent && formattedPrompts.length === 0 && this.sidebar.isLoading) {
+        this.sidebar.setNewChat(true);
+        return;
+      }
+      
       this.sidebar.updatePrompts(formattedPrompts);
       // Clear loading state once we have prompts
       if (formattedPrompts.length > 0) {
@@ -438,7 +465,7 @@ class OctoGPT {
    * Wait for conversation content to appear, then extract
    */
   waitForContentAndExtract() {
-    const maxWait = 10000; // 10 second max
+    const maxWait = 2000; // 2 second max - new chats should be detected quickly
     const checkInterval = 100;
     const startTime = Date.now();
 
@@ -446,12 +473,19 @@ class OctoGPT {
       if (this.hasConversationContent()) {
         // Content found, extract
         this.extractAndLog();
+        
+        // If still no prompts after extracting, wait for them or declare new chat
+        if (this.prompts.length === 0) {
+          this.waitForPromptsOrNewChat();
+        }
         return;
       }
 
       if (Date.now() - startTime > maxWait) {
-        // Timeout, try extracting anyway (might be empty conversation)
-        this.extractAndLog();
+        // Timeout with no content - this is a new/empty chat
+        if (this.sidebar) {
+          this.sidebar.setNewChat(true);
+        }
         return;
       }
 
@@ -459,6 +493,41 @@ class OctoGPT {
     };
 
     check();
+  }
+
+  /**
+   * Wait for prompts to be found, or set new chat state if they don't appear
+   * This handles the case where content elements exist (like system messages)
+   * but no user prompts have been made yet
+   */
+  waitForPromptsOrNewChat() {
+    const maxWait = 1500; // 1.5 second max to find prompts
+    const checkInterval = 200;
+    const startTime = Date.now();
+
+    const check = () => {
+      // Re-extract to check for prompts
+      this.lastUpdateTime = 0; // Reset throttle
+      this.extractAndLog();
+
+      if (this.prompts.length > 0) {
+        // Prompts found, we're done
+        return;
+      }
+
+      if (Date.now() - startTime > maxWait) {
+        // Timeout - no prompts found, this is a new/empty chat
+        if (this.sidebar) {
+          this.sidebar.setNewChat(true);
+        }
+        return;
+      }
+
+      setTimeout(check, checkInterval);
+    };
+
+    // Start checking after a short delay
+    setTimeout(check, checkInterval);
   }
 
   /**

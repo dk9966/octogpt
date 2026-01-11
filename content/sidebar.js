@@ -20,6 +20,8 @@ class OctoGPTSidebar {
     this.site = null; // Will be detected on init
     this.isLoading = true; // Start in loading state
     this.loadingState = 'waiting'; // 'waiting' | 'parsing' | null
+    this.isNewChat = false; // True when page is ready but has no conversation
+    this.newChatDetectionTimer = null; // Timer for detecting new chat state
     this.config = {
       defaultWidth: 200,
       minWidth: 120,
@@ -1272,12 +1274,26 @@ class OctoGPTSidebar {
     this.loadingState = state;
     if (state) {
       this.isLoading = true;
+      this.isNewChat = false; // Loading means not a new chat state
     }
     this.updateLoadingText();
     // Trigger render to ensure loading state is visible
     if (state) {
       this.render();
     }
+  }
+
+  /**
+   * Set new chat state (page ready but no conversation content)
+   * @param {boolean} isNew - Whether this is a new/empty chat
+   */
+  setNewChat(isNew) {
+    this.isNewChat = isNew;
+    if (isNew) {
+      this.isLoading = false;
+      this.loadingState = null;
+    }
+    this.render();
   }
 
   /**
@@ -1304,18 +1320,52 @@ class OctoGPTSidebar {
     const newCount = prompts?.length || 0;
     
     // If we had prompts before and now have 0, likely navigating - show loading
+    // and start new chat detection timer
     if (prevCount > 0 && newCount === 0) {
       this.isLoading = true;
       this.loadingState = 'waiting';
+      this.isNewChat = false;
+      // Start new chat detection - if no prompts appear within timeout, it's a new chat
+      this.startNewChatDetection();
     }
-    // Clear loading state when we find prompts
+    // Clear loading and new chat state when we find prompts
     if (newCount > 0) {
       this.isLoading = false;
       this.loadingState = null;
+      this.isNewChat = false;
+      // Cancel any pending new chat detection
+      this.cancelNewChatDetection();
     }
     
     this.prompts = prompts || [];
     this.render();
+  }
+
+  /**
+   * Start timer to detect new/empty chat
+   * If no prompts appear within timeout, assume it's a new chat
+   */
+  startNewChatDetection() {
+    // Cancel any existing timer
+    this.cancelNewChatDetection();
+    
+    // Short fallback timeout - content.js should detect new chat immediately via hasConversationContent
+    // This is just a safety net in case DOM detection fails
+    this.newChatDetectionTimer = setTimeout(() => {
+      if (this.prompts.length === 0 && this.isLoading) {
+        this.setNewChat(true);
+      }
+    }, 500);
+  }
+
+  /**
+   * Cancel pending new chat detection timer
+   */
+  cancelNewChatDetection() {
+    if (this.newChatDetectionTimer) {
+      clearTimeout(this.newChatDetectionTimer);
+      this.newChatDetectionTimer = null;
+    }
   }
 
   /**
@@ -1363,6 +1413,15 @@ class OctoGPTSidebar {
       // Clear existing content
       promptList.innerHTML = '';
 
+      // New chat state: show message without spinner
+      if (this.isNewChat && this.prompts.length === 0) {
+        loading.style.display = 'none';
+        emptyState.style.display = 'block';
+        emptyState.textContent = 'Start a conversation to see prompts here';
+        promptList.style.display = 'none';
+        return;
+      }
+
       // Show loading state while waiting for prompts
       if (this.isLoading && this.prompts.length === 0) {
         loading.style.display = 'flex';
@@ -1376,6 +1435,7 @@ class OctoGPTSidebar {
 
       if (this.prompts.length === 0) {
         emptyState.style.display = 'block';
+        emptyState.textContent = 'No prompts found';
         promptList.style.display = 'none';
         return;
       }
@@ -1892,6 +1952,8 @@ class OctoGPTSidebar {
     if (this.hideTimeout) {
       clearTimeout(this.hideTimeout);
     }
+    // Cancel new chat detection timer
+    this.cancelNewChatDetection();
     // Remove the entire root container (includes sidebar and slab)
     if (this.rootContainer && this.rootContainer.parentNode) {
       this.rootContainer.parentNode.removeChild(this.rootContainer);
