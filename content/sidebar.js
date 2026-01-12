@@ -225,6 +225,41 @@ class OctoGPTSidebar {
                 Controls animation speed when scrolling to prompts (0 = instant)
               </div>
             </div>
+            <div class="octogpt-sidebar__settings-section">
+              <label class="octogpt-sidebar__settings-label">Keyboard Shortcuts</label>
+              <div class="octogpt-sidebar__shortcuts-list">
+                <div class="octogpt-sidebar__shortcut-item">
+                  <div class="octogpt-sidebar__shortcut-keys">
+                    <kbd class="octogpt-sidebar__key">${this.getModifierKey()}</kbd>
+                    <span class="octogpt-sidebar__key-separator">+</span>
+                    <kbd class="octogpt-sidebar__key">H</kbd>
+                  </div>
+                  <div class="octogpt-sidebar__shortcut-description">Toggle sidebar</div>
+                </div>
+                <div class="octogpt-sidebar__shortcut-item">
+                  <div class="octogpt-sidebar__shortcut-keys">
+                    <kbd class="octogpt-sidebar__key">Alt</kbd>
+                    <span class="octogpt-sidebar__key-separator">+</span>
+                    <kbd class="octogpt-sidebar__key">Shift</kbd>
+                    <span class="octogpt-sidebar__key-separator">+</span>
+                    <kbd class="octogpt-sidebar__key">↑</kbd>
+                    <span class="octogpt-sidebar__key-separator">/</span>
+                    <kbd class="octogpt-sidebar__key">↓</kbd>
+                  </div>
+                  <div class="octogpt-sidebar__shortcut-description">Navigate between prompts</div>
+                </div>
+                <div class="octogpt-sidebar__shortcut-item">
+                  <div class="octogpt-sidebar__shortcut-keys">
+                    <kbd class="octogpt-sidebar__key">Alt</kbd>
+                    <span class="octogpt-sidebar__key-separator">+</span>
+                    <kbd class="octogpt-sidebar__key">↑</kbd>
+                    <span class="octogpt-sidebar__key-separator">/</span>
+                    <kbd class="octogpt-sidebar__key">↓</kbd>
+                  </div>
+                  <div class="octogpt-sidebar__shortcut-description">Navigate prompts and headers</div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -731,6 +766,9 @@ class OctoGPTSidebar {
       /* Settings page */
       .octogpt-sidebar__settings {
         padding: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
       }
 
       .octogpt-sidebar__settings-section {
@@ -861,6 +899,74 @@ class OctoGPTSidebar {
 
       :host-context(.dark) .octogpt-sidebar__settings-hint,
       :host-context(.dark-theme) .octogpt-sidebar__settings-hint {
+        color: #b4b4b4;
+      }
+
+      .octogpt-sidebar__shortcuts-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .octogpt-sidebar__shortcut-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 8px 0;
+      }
+
+      .octogpt-sidebar__shortcut-keys {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        flex-shrink: 0;
+      }
+
+      .octogpt-sidebar__key {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 24px;
+        height: 24px;
+        padding: 0 6px;
+        font-size: 11px;
+        font-weight: 600;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+        color: #0d0d0d;
+        background: #f0f0f0;
+        border: 1px solid #e5e5e5;
+        border-radius: 4px;
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+      }
+
+      :host-context(.dark) .octogpt-sidebar__key,
+      :host-context(.dark-theme) .octogpt-sidebar__key {
+        color: #ececec;
+        background: #2f2f2f;
+        border-color: #3f3f3f;
+      }
+
+      .octogpt-sidebar__key-separator {
+        font-size: 12px;
+        color: #6b6b6b;
+        font-weight: 400;
+      }
+
+      :host-context(.dark) .octogpt-sidebar__key-separator,
+      :host-context(.dark-theme) .octogpt-sidebar__key-separator {
+        color: #b4b4b4;
+      }
+
+      .octogpt-sidebar__shortcut-description {
+        font-size: 12px;
+        color: #6b6b6b;
+        text-align: right;
+        flex: 1;
+      }
+
+      :host-context(.dark) .octogpt-sidebar__shortcut-description,
+      :host-context(.dark-theme) .octogpt-sidebar__shortcut-description {
         color: #b4b4b4;
       }
 
@@ -2245,6 +2351,13 @@ class OctoGPTSidebar {
     } else {
       this.render();
     }
+  }
+
+  /**
+   * Get the modifier key label (Cmd on Mac, Ctrl on Windows/Linux)
+   */
+  getModifierKey() {
+    return navigator.platform.toUpperCase().indexOf('MAC') >= 0 ? 'Cmd' : 'Ctrl';
   }
 
   /**
