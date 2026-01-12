@@ -110,8 +110,8 @@
 
 /* Claude light mode slab (warm cream palette) */
 #octogpt-root[data-site="claude"] .octogpt-slab {
-    background: #FAF9F7;
-    border-color: #E6E3DE;
+    background: #FDFCFB;
+    border-color: #EBEBEB;
 }
 
 #octogpt-root[data-site="claude"] .octogpt-slab__arrow {
@@ -483,28 +483,28 @@ body:has(#octogpt-root) main {
 
 /* Claude light mode settings panel (warm cream palette) */
 #octogpt-root[data-site="claude"] .octogpt-settings-panel__container {
-    background: #FAF9F7;
+    background: #FDFCFB;
 }
 
 #octogpt-root[data-site="claude"] .octogpt-settings-panel__header {
-    border-bottom-color: #E6E3DE;
+    border-bottom-color: #EBEBEB;
 }
 
 #octogpt-root[data-site="claude"] .octogpt-settings-panel__close-btn:hover {
-    background: #F0EDE8;
+    background: #F5F5F5;
 }
 
 #octogpt-root[data-site="claude"] .octogpt-settings-panel__slider {
-    background: #E6E3DE;
+    background: #EBEBEB;
 }
 
 #octogpt-root[data-site="claude"] .octogpt-settings-panel__input {
-    border-color: #E6E3DE;
+    border-color: #EBEBEB;
 }
 
 #octogpt-root[data-site="claude"] .octogpt-settings-panel__key {
-    background: #F0EDE8;
-    border-color: #E6E3DE;
+    background: #F5F5F5;
+    border-color: #EBEBEB;
 }
 
 /* Claude dark mode settings panel (warm dark palette) */

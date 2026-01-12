@@ -914,8 +914,8 @@ class OctoGPTSidebar {
 
       /* Claude-specific light mode styles (warm cream palette) */
       :host([data-site="claude"]) .octogpt-sidebar__container {
-        background: #FAF9F7;
-        border-left-color: #E6E3DE;
+        background: #FDFCFB;
+        border-left-color: #EBEBEB;
         color: #1A1A1A;
       }
 
@@ -925,21 +925,21 @@ class OctoGPTSidebar {
 
       :host([data-site="claude"]) .octogpt-sidebar__collapse-all-btn:hover,
       :host([data-site="claude"]) .octogpt-sidebar__pin-btn:hover {
-        background: #F0EDE8;
+        background: #F5F5F5;
         color: #1A1A1A;
       }
 
       :host([data-site="claude"]) .octogpt-sidebar__pin-btn--active {
         color: #1A1A1A;
-        background: #E8E4DF;
+        background: #EBEBEB;
       }
 
       :host([data-site="claude"]) .octogpt-sidebar__prompt-item:hover {
-        background: #F0EDE8;
+        background: #F5F5F5;
       }
 
       :host([data-site="claude"]) .octogpt-sidebar__prompt-item--active {
-        background: #E8E4DF;
+        background: #EBEBEB;
       }
 
       :host([data-site="claude"]) .octogpt-sidebar__prompt-text {
@@ -955,20 +955,20 @@ class OctoGPTSidebar {
       }
 
       :host([data-site="claude"]) .octogpt-sidebar__loading-spinner {
-        border-color: #E6E3DE;
+        border-color: #EBEBEB;
         border-top-color: #1A1A1A;
       }
 
       :host([data-site="claude"]) .octogpt-sidebar__headings {
-        border-left-color: #E6E3DE;
+        border-left-color: #EBEBEB;
       }
 
       :host([data-site="claude"]) .octogpt-sidebar__heading-item:hover {
-        background: #F0EDE8;
+        background: #F5F5F5;
       }
 
       :host([data-site="claude"]) .octogpt-sidebar__heading-item--active {
-        background: #E8E4DF;
+        background: #EBEBEB;
       }
 
       :host([data-site="claude"]) .octogpt-sidebar__heading-item:hover .octogpt-sidebar__heading-text,
