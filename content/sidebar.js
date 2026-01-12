@@ -912,153 +912,89 @@ class OctoGPTSidebar {
         }
       }
 
-      /* Claude-specific light mode styles (warm cream palette) */
+      /* Claude-specific styles (warm dark palette) */
       :host([data-site="claude"]) .octogpt-sidebar__container {
-        background: #FDFCFB;
-        border-left-color: #EBEBEB;
-        color: #1A1A1A;
+        background: #201F1D;
+        border-left-color: #322F2B;
+        color: #E8E4DF;
       }
 
       :host([data-site="claude"]) .octogpt-sidebar__logo-text {
-        color: #1A1A1A;
+        color: #E8E4DF;
+      }
+
+      :host([data-site="claude"]) .octogpt-sidebar__collapse-all-btn,
+      :host([data-site="claude"]) .octogpt-sidebar__pin-btn {
+        color: #9B9690;
       }
 
       :host([data-site="claude"]) .octogpt-sidebar__collapse-all-btn:hover,
       :host([data-site="claude"]) .octogpt-sidebar__pin-btn:hover {
-        background: #F5F5F5;
-        color: #1A1A1A;
+        background: #2D2B28;
+        color: #E8E4DF;
       }
 
       :host([data-site="claude"]) .octogpt-sidebar__pin-btn--active {
-        color: #1A1A1A;
-        background: #EBEBEB;
+        color: #E8E4DF;
+        background: #3A3734;
       }
 
       :host([data-site="claude"]) .octogpt-sidebar__prompt-item:hover {
-        background: #F5F5F5;
+        background: #2D2B28;
       }
 
       :host([data-site="claude"]) .octogpt-sidebar__prompt-item--active {
-        background: #EBEBEB;
+        background: #3A3734;
       }
 
       :host([data-site="claude"]) .octogpt-sidebar__prompt-text {
-        color: #1A1A1A;
+        color: #E8E4DF;
       }
 
       :host([data-site="claude"]) .octogpt-sidebar__content::-webkit-scrollbar-thumb {
-        background: rgba(0, 0, 0, 0.08);
+        background: rgba(255, 255, 255, 0.08);
       }
 
       :host([data-site="claude"]) .octogpt-sidebar__content::-webkit-scrollbar-thumb:hover {
-        background: rgba(0, 0, 0, 0.15);
+        background: rgba(255, 255, 255, 0.15);
       }
 
       :host([data-site="claude"]) .octogpt-sidebar__loading-spinner {
-        border-color: #EBEBEB;
-        border-top-color: #1A1A1A;
+        border-color: #322F2B;
+        border-top-color: #E8E4DF;
+      }
+
+      :host([data-site="claude"]) .octogpt-sidebar__loading-text {
+        color: #9B9690;
+      }
+
+      :host([data-site="claude"]) .octogpt-sidebar__empty {
+        color: #9B9690;
       }
 
       :host([data-site="claude"]) .octogpt-sidebar__headings {
-        border-left-color: #EBEBEB;
+        border-left-color: #322F2B;
       }
 
       :host([data-site="claude"]) .octogpt-sidebar__heading-item:hover {
-        background: #F5F5F5;
+        background: #2D2B28;
       }
 
       :host([data-site="claude"]) .octogpt-sidebar__heading-item--active {
-        background: #EBEBEB;
+        background: #3A3734;
+      }
+
+      :host([data-site="claude"]) .octogpt-sidebar__heading-text {
+        color: #9B9690;
       }
 
       :host([data-site="claude"]) .octogpt-sidebar__heading-item:hover .octogpt-sidebar__heading-text,
       :host([data-site="claude"]) .octogpt-sidebar__heading-item--active .octogpt-sidebar__heading-text {
-        color: #1A1A1A;
+        color: #E8E4DF;
       }
 
-      /* Claude-specific dark mode styles (warm dark palette) */
-      :host([data-site="claude"]):host-context([data-theme="dark"]) .octogpt-sidebar__container {
-        background: #2F2F2E;
-        border-left-color: #434340;
-        color: #EEEEE8;
-      }
-
-      :host([data-site="claude"]):host-context([data-theme="dark"]) .octogpt-sidebar__logo-text {
-        color: #EEEEE8;
-      }
-
-      :host([data-site="claude"]):host-context([data-theme="dark"]) .octogpt-sidebar__collapse-all-btn,
-      :host([data-site="claude"]):host-context([data-theme="dark"]) .octogpt-sidebar__pin-btn {
-        color: #A5A5A0;
-      }
-
-      :host([data-site="claude"]):host-context([data-theme="dark"]) .octogpt-sidebar__collapse-all-btn:hover,
-      :host([data-site="claude"]):host-context([data-theme="dark"]) .octogpt-sidebar__pin-btn:hover {
-        background: #3B3B38;
-        color: #EEEEE8;
-      }
-
-      :host([data-site="claude"]):host-context([data-theme="dark"]) .octogpt-sidebar__pin-btn--active {
-        color: #EEEEE8;
-        background: #484845;
-      }
-
-      :host([data-site="claude"]):host-context([data-theme="dark"]) .octogpt-sidebar__prompt-item:hover {
-        background: #3B3B38;
-      }
-
-      :host([data-site="claude"]):host-context([data-theme="dark"]) .octogpt-sidebar__prompt-item--active {
-        background: #484845;
-      }
-
-      :host([data-site="claude"]):host-context([data-theme="dark"]) .octogpt-sidebar__prompt-text {
-        color: #EEEEE8;
-      }
-
-      :host([data-site="claude"]):host-context([data-theme="dark"]) .octogpt-sidebar__content::-webkit-scrollbar-thumb {
-        background: rgba(255, 255, 255, 0.08);
-      }
-
-      :host([data-site="claude"]):host-context([data-theme="dark"]) .octogpt-sidebar__content::-webkit-scrollbar-thumb:hover {
-        background: rgba(255, 255, 255, 0.15);
-      }
-
-      :host([data-site="claude"]):host-context([data-theme="dark"]) .octogpt-sidebar__loading-spinner {
-        border-color: #434340;
-        border-top-color: #EEEEE8;
-      }
-
-      :host([data-site="claude"]):host-context([data-theme="dark"]) .octogpt-sidebar__loading-text {
-        color: #A5A5A0;
-      }
-
-      :host([data-site="claude"]):host-context([data-theme="dark"]) .octogpt-sidebar__empty {
-        color: #A5A5A0;
-      }
-
-      :host([data-site="claude"]):host-context([data-theme="dark"]) .octogpt-sidebar__headings {
-        border-left-color: #434340;
-      }
-
-      :host([data-site="claude"]):host-context([data-theme="dark"]) .octogpt-sidebar__heading-item:hover {
-        background: #3B3B38;
-      }
-
-      :host([data-site="claude"]):host-context([data-theme="dark"]) .octogpt-sidebar__heading-item--active {
-        background: #484845;
-      }
-
-      :host([data-site="claude"]):host-context([data-theme="dark"]) .octogpt-sidebar__heading-text {
-        color: #A5A5A0;
-      }
-
-      :host([data-site="claude"]):host-context([data-theme="dark"]) .octogpt-sidebar__heading-item:hover .octogpt-sidebar__heading-text,
-      :host([data-site="claude"]):host-context([data-theme="dark"]) .octogpt-sidebar__heading-item--active .octogpt-sidebar__heading-text {
-        color: #EEEEE8;
-      }
-
-      :host([data-site="claude"]):host-context([data-theme="dark"]) .octogpt-sidebar__resize-handle:hover,
-      :host([data-site="claude"]):host-context([data-theme="dark"]) .octogpt-sidebar__resize-handle--active {
+      :host([data-site="claude"]) .octogpt-sidebar__resize-handle:hover,
+      :host([data-site="claude"]) .octogpt-sidebar__resize-handle--active {
         background: rgba(255, 255, 255, 0.08);
       }
     `;
@@ -1922,13 +1858,38 @@ class OctoGPTSidebar {
    */
   findHeadingElement(heading) {
     if (this.site === 'claude') {
-      // Claude: use data-testid or generated ID
-      const container = document.querySelector(`[data-testid="${heading.turnId}"]`) ||
-                       document.querySelector(`[class*="assistant"]`);
+      // Claude: turnId is like "claude-response-1" where 1 is the data-test-render-count value
+      let container = null;
+      
+      // Try to extract the render count from turnId (format: "claude-response-{count}")
+      const renderCountMatch = heading.turnId?.match(/^claude-response-(\d+)$/);
+      if (renderCountMatch) {
+        const renderCount = renderCountMatch[1];
+        container = document.querySelector(`[data-test-render-count="${renderCount}"]`);
+      }
+      
+      if (!container) {
+        // Fallback: try data-testid
+        container = document.querySelector(`[data-testid="${heading.turnId}"]`);
+      }
+      
+      if (!container) {
+        // Fallback: find any assistant container with standard-markdown
+        const allContainers = document.querySelectorAll('[data-test-render-count], [data-is-streaming]');
+        for (const candidate of allContainers) {
+          if (candidate.querySelector('.standard-markdown, [class*="standard-markdown"]')) {
+            container = candidate;
+            break;
+          }
+        }
+      }
+      
       if (!container) return null;
 
-      // Find markdown container
-      const markdownContainer = container.querySelector('[class*="markdown"], [class*="prose"]') || container;
+      // Find markdown container - prioritize standard-markdown
+      const markdownContainer = container.querySelector('.standard-markdown, [class*="standard-markdown"]') ||
+                               container.querySelector('[class*="markdown"], [class*="prose"]') || 
+                               container;
       const headings = markdownContainer.querySelectorAll(heading.level);
       return headings[heading.index] || null;
     } else if (this.site === 'gemini') {

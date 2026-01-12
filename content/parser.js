@@ -733,10 +733,10 @@ class ClaudeParser extends BaseParser {
             conversationContainer: '[class*="conversation"], main',
             // Claude uses data-testid attributes for message turns
             userMessages: '[data-testid="user-message"], [data-is-streaming="false"][class*="human"], .human-turn',
-            assistantMessages: '[data-testid="assistant-message"], [class*="assistant"], .assistant-turn',
+            assistantMessages: '[data-testid="assistant-message"], [data-is-streaming], [class*="assistant"], .assistant-turn',
             // Text content selectors
             userQueryText: '.whitespace-pre-wrap, [class*="prose"], p',
-            assistantContent: '[class*="markdown"], [class*="prose"]',
+            assistantContent: '.standard-markdown, [class*="standard-markdown"], [class*="markdown"], [class*="prose"]',
             // Message containers
             messageGroup: '[class*="message-row"], [class*="turn"]',
         };
@@ -895,13 +895,27 @@ class ClaudeParser extends BaseParser {
      * Extract headings from the assistant response following a user message
      */
     extractAssistantHeadings(userElement) {
-        // Find the next sibling that is an assistant message
-        let nextElement = userElement.nextElementSibling;
+        // Claude structure: user and assistant are in sibling containers at the data-test-render-count level
+        // userElement is [data-testid="user-message"] which is deeply nested
+        // We need to find the outer container first, then look at its next sibling
+        
+        // Find the outer container (data-test-render-count or similar top-level message wrapper)
+        const userContainer = userElement.closest('[data-test-render-count]') ||
+                              userElement.closest('[data-testid="user-message"]')?.parentElement?.parentElement?.parentElement?.parentElement?.parentElement?.parentElement ||
+                              userElement;
+        
+        // Find the next sibling that contains the assistant response
+        let nextElement = userContainer.nextElementSibling;
         let assistantContainer = null;
         
         // Walk through siblings to find the assistant response
         while (nextElement) {
-            const isAssistant = nextElement.querySelector('[class*="assistant"]') ||
+            // Claude assistant responses have data-is-streaming attribute or contain standard-markdown
+            const hasStreamingAttr = nextElement.querySelector('[data-is-streaming]');
+            const hasMarkdown = nextElement.querySelector('.standard-markdown, [class*="standard-markdown"]');
+            const isAssistant = hasStreamingAttr || 
+                               hasMarkdown ||
+                               nextElement.querySelector('[class*="assistant"]') ||
                                nextElement.querySelector(this.selectors.assistantMessages) ||
                                nextElement.getAttribute('data-testid')?.includes('assistant');
             
@@ -911,7 +925,8 @@ class ClaudeParser extends BaseParser {
             }
             
             // If we hit another user message, stop looking
-            const isUser = nextElement.querySelector('[class*="human"]') ||
+            const isUser = nextElement.querySelector('[data-testid="user-message"]') ||
+                          nextElement.querySelector('[class*="human"]') ||
                           nextElement.getAttribute('data-testid')?.includes('user') ||
                           nextElement.getAttribute('data-testid')?.includes('human');
             if (isUser) break;
@@ -931,14 +946,20 @@ class ClaudeParser extends BaseParser {
      * Extract headings from an assistant response element
      */
     extractHeadingsFromElement(container) {
-        // Find the markdown content area
-        const markdownContainer = container.querySelector(this.selectors.assistantContent) || container;
+        // Find the markdown content area - Claude uses standard-markdown class
+        const markdownContainer = container.querySelector('.standard-markdown, [class*="standard-markdown"]') ||
+                                 container.querySelector(this.selectors.assistantContent) || 
+                                 container;
         
         // Generate a unique ID for this container
-        const containerId = container.getAttribute('data-testid') || 
+        // For Claude, we'll use the index of the data-test-render-count container
+        const renderCountContainer = container.closest('[data-test-render-count]') || container;
+        const renderCount = renderCountContainer.getAttribute('data-test-render-count');
+        const containerId = renderCount ? `claude-response-${renderCount}` : 
+                           container.getAttribute('data-testid') ||
                            `claude-response-${Date.now()}`;
 
-        const headingLevels = ['h2', 'h3', 'h4', 'h5'];
+        const headingLevels = ['h1', 'h2', 'h3', 'h4', 'h5'];
         
         for (const level of headingLevels) {
             const headings = markdownContainer.querySelectorAll(level);
