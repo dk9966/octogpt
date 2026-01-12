@@ -1185,6 +1185,30 @@ class OctoGPTSidebar {
       return;
     }
 
+    // Alt+Shift+Up/Down: Navigate between prompts only (skip headers)
+    if (event.altKey && event.shiftKey && (event.key === 'ArrowUp' || event.key === 'ArrowDown')) {
+      event.preventDefault();
+      
+      if (this.prompts.length === 0) return;
+      
+      // Find current prompt index from navigation state or visible position
+      let currentPromptIndex = this.currentPromptIndex;
+      if (currentPromptIndex === -1) {
+        // Find prompt closest to viewport center
+        currentPromptIndex = this.findVisiblePromptIndex();
+      }
+      
+      // Calculate new index
+      const direction = event.key === 'ArrowUp' ? -1 : 1;
+      const newIndex = currentPromptIndex + direction;
+      
+      // Clamp to valid range
+      if (newIndex >= 0 && newIndex < this.prompts.length) {
+        this.handlePromptClick(newIndex);
+      }
+      return;
+    }
+
     // Alt+Up/Down: Navigate between prompts and headers
     if (event.altKey && (event.key === 'ArrowUp' || event.key === 'ArrowDown')) {
       event.preventDefault();
@@ -1820,11 +1844,17 @@ class OctoGPTSidebar {
       return;
     }
 
+    // Clear any heading highlight
+    this.clearHeadingHighlight();
+
     // Update active state visually without re-rendering DOM
     this.setActivePrompt(index, true);
 
     // Scroll to the prompt element
     this.scrollToElement(prompt.element);
+
+    // Scroll sidebar to show the highlighted prompt
+    this.scrollSidebarToItem({ type: 'prompt', promptIndex: index });
   }
 
   /**
@@ -2006,6 +2036,39 @@ class OctoGPTSidebar {
         element = this.findHeadingElement(item.heading);
       }
       
+      if (!element || !element.isConnected) return;
+      
+      const rect = element.getBoundingClientRect();
+      const elementCenter = rect.top + rect.height / 2;
+      const distance = Math.abs(elementCenter - viewportCenter);
+      
+      if (distance < closestDistance) {
+        closestDistance = distance;
+        closestIndex = index;
+      }
+    });
+    
+    return closestIndex;
+  }
+
+  /**
+   * Find the prompt index closest to the viewport center
+   * Used for Alt+Shift+Up/Down navigation (prompts only)
+   */
+  findVisiblePromptIndex() {
+    if (this.prompts.length === 0) return 0;
+    
+    const scrollContainer = this.findScrollContainer();
+    if (!scrollContainer) return 0;
+    
+    const containerRect = scrollContainer.getBoundingClientRect();
+    const viewportCenter = containerRect.top + containerRect.height / 2;
+    
+    let closestIndex = 0;
+    let closestDistance = Infinity;
+    
+    this.prompts.forEach((prompt, index) => {
+      const element = prompt.element;
       if (!element || !element.isConnected) return;
       
       const rect = element.getBoundingClientRect();
