@@ -11,9 +11,10 @@ class OctoGPTSidebar {
     this.sidebar = null;
     this.shadowRoot = null;
     this.slab = null;
+    this.settingsPanel = null;
     this.isVisible = false;
     this.isPinned = false;
-    this.isSettingsMode = false;
+    this.isSettingsOpen = false;
     this.prompts = [];
     this.currentPromptIndex = -1;
     this.collapsedPrompts = new Set(); // Track which prompts have collapsed headings
@@ -53,6 +54,8 @@ class OctoGPTSidebar {
     this.handleSidebarMouseLeave = this.handleSidebarMouseLeave.bind(this);
     this.handleSidebarTransitionEnd = this.handleSidebarTransitionEnd.bind(this);
     this.toggleSettings = this.toggleSettings.bind(this);
+    this.openSettings = this.openSettings.bind(this);
+    this.closeSettings = this.closeSettings.bind(this);
     this.handleScrollDurationChange = this.handleScrollDurationChange.bind(this);
   }
 
@@ -204,63 +207,6 @@ class OctoGPTSidebar {
           <div class="octogpt-sidebar__empty" style="display: none;">
             No prompts found
           </div>
-          <div class="octogpt-sidebar__settings" style="display: none;">
-            <div class="octogpt-sidebar__settings-section">
-              <label class="octogpt-sidebar__settings-label">Scroll Duration (ms)</label>
-              <div class="octogpt-sidebar__settings-controls">
-                <input type="range" 
-                       class="octogpt-sidebar__settings-slider" 
-                       min="0" 
-                       max="600" 
-                       value="${this.config.scrollDuration}"
-                       aria-label="Scroll duration slider">
-                <input type="number" 
-                       class="octogpt-sidebar__settings-input" 
-                       min="0" 
-                       max="600" 
-                       value="${this.config.scrollDuration}"
-                       aria-label="Scroll duration input">
-              </div>
-              <div class="octogpt-sidebar__settings-hint">
-                Controls animation speed when scrolling to prompts (0 = instant)
-              </div>
-            </div>
-            <div class="octogpt-sidebar__settings-section">
-              <label class="octogpt-sidebar__settings-label">Keyboard Shortcuts</label>
-              <div class="octogpt-sidebar__shortcuts-list">
-                <div class="octogpt-sidebar__shortcut-item">
-                  <div class="octogpt-sidebar__shortcut-keys">
-                    <kbd class="octogpt-sidebar__key">${this.getModifierKey()}</kbd>
-                    <span class="octogpt-sidebar__key-separator">+</span>
-                    <kbd class="octogpt-sidebar__key">H</kbd>
-                  </div>
-                  <div class="octogpt-sidebar__shortcut-description">Toggle sidebar</div>
-                </div>
-                <div class="octogpt-sidebar__shortcut-item">
-                  <div class="octogpt-sidebar__shortcut-keys">
-                    <kbd class="octogpt-sidebar__key">Alt</kbd>
-                    <span class="octogpt-sidebar__key-separator">+</span>
-                    <kbd class="octogpt-sidebar__key">Shift</kbd>
-                    <span class="octogpt-sidebar__key-separator">+</span>
-                    <kbd class="octogpt-sidebar__key">↑</kbd>
-                    <span class="octogpt-sidebar__key-separator">/</span>
-                    <kbd class="octogpt-sidebar__key">↓</kbd>
-                  </div>
-                  <div class="octogpt-sidebar__shortcut-description">Navigate between prompts</div>
-                </div>
-                <div class="octogpt-sidebar__shortcut-item">
-                  <div class="octogpt-sidebar__shortcut-keys">
-                    <kbd class="octogpt-sidebar__key">Alt</kbd>
-                    <span class="octogpt-sidebar__key-separator">+</span>
-                    <kbd class="octogpt-sidebar__key">↑</kbd>
-                    <span class="octogpt-sidebar__key-separator">/</span>
-                    <kbd class="octogpt-sidebar__key">↓</kbd>
-                  </div>
-                  <div class="octogpt-sidebar__shortcut-description">Navigate prompts and headers</div>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     `;
@@ -279,6 +225,9 @@ class OctoGPTSidebar {
     // Create hover slab
     this.createSlab();
 
+    // Create settings panel
+    this.createSettingsPanel();
+
     // Set initial visibility
     this.updateVisibility();
 
@@ -296,6 +245,158 @@ class OctoGPTSidebar {
     this.slab.innerHTML = '<span class="octogpt-slab__arrow">&lt;</span>';
     this.slab.addEventListener('mouseenter', this.handleSlabMouseEnter);
     this.rootContainer.appendChild(this.slab);
+  }
+
+  /**
+   * Create the settings panel (modal overlay)
+   */
+  createSettingsPanel() {
+    this.settingsPanel = document.createElement('div');
+    this.settingsPanel.className = 'octogpt-settings-panel';
+    this.settingsPanel.setAttribute('role', 'dialog');
+    this.settingsPanel.setAttribute('aria-label', 'Settings');
+    this.settingsPanel.setAttribute('aria-modal', 'true');
+
+    const html = `
+      <div class="octogpt-settings-panel__backdrop"></div>
+      <div class="octogpt-settings-panel__container">
+        <div class="octogpt-settings-panel__header">
+          <h2 class="octogpt-settings-panel__title">Settings</h2>
+          <button class="octogpt-settings-panel__close-btn" aria-label="Close settings">
+            <svg viewBox="0 0 16 16" width="16" height="16">
+              <path fill="currentColor" d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.75.75 0 1 1 1.06 1.06L9.06 8l3.22 3.22a.75.75 0 1 1-1.06 1.06L8 9.06l-3.22 3.22a.75.75 0 0 1-1.06-1.06L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06z"/>
+            </svg>
+          </button>
+        </div>
+        <div class="octogpt-settings-panel__body">
+          <div class="octogpt-settings-panel__section">
+            <label class="octogpt-settings-panel__label">Scroll Duration (ms)</label>
+            <div class="octogpt-settings-panel__controls">
+              <input type="range" 
+                     class="octogpt-settings-panel__slider" 
+                     min="0" 
+                     max="600" 
+                     value="${this.config.scrollDuration}"
+                     aria-label="Scroll duration slider">
+              <input type="number" 
+                     class="octogpt-settings-panel__input" 
+                     min="0" 
+                     max="600" 
+                     value="${this.config.scrollDuration}"
+                     aria-label="Scroll duration input">
+            </div>
+            <div class="octogpt-settings-panel__hint">
+              Controls animation speed when scrolling to prompts (0 = instant)
+            </div>
+          </div>
+          <div class="octogpt-settings-panel__section">
+            <label class="octogpt-settings-panel__label">Keyboard Shortcuts</label>
+            <div class="octogpt-settings-panel__shortcuts">
+              <div class="octogpt-settings-panel__shortcut">
+                <div class="octogpt-settings-panel__keys">
+                  <kbd class="octogpt-settings-panel__key">${this.getModifierKey()}</kbd>
+                  <span class="octogpt-settings-panel__key-sep">+</span>
+                  <kbd class="octogpt-settings-panel__key">H</kbd>
+                </div>
+                <div class="octogpt-settings-panel__shortcut-desc">Toggle sidebar</div>
+              </div>
+              <div class="octogpt-settings-panel__shortcut">
+                <div class="octogpt-settings-panel__keys">
+                  <kbd class="octogpt-settings-panel__key">Alt</kbd>
+                  <span class="octogpt-settings-panel__key-sep">+</span>
+                  <kbd class="octogpt-settings-panel__key">Shift</kbd>
+                  <span class="octogpt-settings-panel__key-sep">+</span>
+                  <kbd class="octogpt-settings-panel__key">Up/Down</kbd>
+                </div>
+                <div class="octogpt-settings-panel__shortcut-desc">Navigate between prompts</div>
+              </div>
+              <div class="octogpt-settings-panel__shortcut">
+                <div class="octogpt-settings-panel__keys">
+                  <kbd class="octogpt-settings-panel__key">Alt</kbd>
+                  <span class="octogpt-settings-panel__key-sep">+</span>
+                  <kbd class="octogpt-settings-panel__key">Up/Down</kbd>
+                </div>
+                <div class="octogpt-settings-panel__shortcut-desc">Navigate prompts and headers</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+
+    this.settingsPanel.innerHTML = html;
+
+    // Attach event listeners
+    const closeBtn = this.settingsPanel.querySelector('.octogpt-settings-panel__close-btn');
+    closeBtn.addEventListener('click', () => this.closeSettings());
+
+    const backdrop = this.settingsPanel.querySelector('.octogpt-settings-panel__backdrop');
+    backdrop.addEventListener('click', () => this.closeSettings());
+
+    // Settings controls
+    const scrollSlider = this.settingsPanel.querySelector('.octogpt-settings-panel__slider');
+    const scrollInput = this.settingsPanel.querySelector('.octogpt-settings-panel__input');
+    if (scrollSlider && scrollInput) {
+      scrollSlider.addEventListener('input', (e) => {
+        const value = parseInt(e.target.value, 10);
+        scrollInput.value = value;
+        this.handleScrollDurationChange(value);
+      });
+      scrollInput.addEventListener('input', (e) => {
+        let value = parseInt(e.target.value, 10);
+        if (isNaN(value)) value = 0;
+        value = Math.max(0, Math.min(600, value));
+        scrollSlider.value = value;
+        scrollInput.value = value;
+        this.handleScrollDurationChange(value);
+      });
+    }
+
+    this.rootContainer.appendChild(this.settingsPanel);
+  }
+
+  /**
+   * Open the settings panel
+   */
+  openSettings() {
+    if (!this.settingsPanel) return;
+    
+    this.isSettingsOpen = true;
+    
+    // Update slider/input values before showing
+    const scrollSlider = this.settingsPanel.querySelector('.octogpt-settings-panel__slider');
+    const scrollInput = this.settingsPanel.querySelector('.octogpt-settings-panel__input');
+    if (scrollSlider && scrollInput) {
+      scrollSlider.value = this.config.scrollDuration;
+      scrollInput.value = this.config.scrollDuration;
+    }
+    
+    // Update panel position based on sidebar visibility
+    this.updateSettingsPanelPosition();
+    
+    this.settingsPanel.classList.add('octogpt-settings-panel--open');
+    this.sidebar.classList.add('octogpt-sidebar--dimmed');
+  }
+
+  /**
+   * Close the settings panel
+   */
+  closeSettings() {
+    if (!this.settingsPanel) return;
+    
+    this.isSettingsOpen = false;
+    this.settingsPanel.classList.remove('octogpt-settings-panel--open');
+    this.sidebar.classList.remove('octogpt-sidebar--dimmed');
+  }
+
+  /**
+   * Update settings panel position based on sidebar visibility
+   */
+  updateSettingsPanelPosition() {
+    if (!this.settingsPanel) return;
+    
+    const sidebarWidth = this.isVisible ? this.config.defaultWidth : 0;
+    this.settingsPanel.style.setProperty('--sidebar-offset', `${sidebarWidth}px`);
   }
 
   /**
@@ -763,213 +864,6 @@ class OctoGPTSidebar {
         color: #ececec;
       }
 
-      /* Settings page */
-      .octogpt-sidebar__settings {
-        padding: 16px;
-        display: flex;
-        flex-direction: column;
-        gap: 24px;
-      }
-
-      .octogpt-sidebar__settings-section {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-      }
-
-      .octogpt-sidebar__settings-label {
-        font-size: 13px;
-        font-weight: 600;
-        color: #0d0d0d;
-      }
-
-      :host-context(.dark) .octogpt-sidebar__settings-label,
-      :host-context(.dark-theme) .octogpt-sidebar__settings-label {
-        color: #ececec;
-      }
-
-      .octogpt-sidebar__settings-controls {
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: 8px 12px;
-      }
-
-      .octogpt-sidebar__settings-slider {
-        flex: 1 1 80px;
-        min-width: 0;
-        height: 4px;
-        border-radius: 2px;
-        background: #e5e5e5;
-        outline: none;
-        -webkit-appearance: none;
-        appearance: none;
-      }
-
-      .octogpt-sidebar__settings-slider::-webkit-slider-thumb {
-        -webkit-appearance: none;
-        appearance: none;
-        width: 16px;
-        height: 16px;
-        border-radius: 50%;
-        background: #0d0d0d;
-        cursor: pointer;
-        transition: background 0.15s ease;
-      }
-
-      .octogpt-sidebar__settings-slider::-webkit-slider-thumb:hover {
-        background: #333333;
-      }
-
-      .octogpt-sidebar__settings-slider::-moz-range-thumb {
-        width: 16px;
-        height: 16px;
-        border-radius: 50%;
-        background: #0d0d0d;
-        cursor: pointer;
-        border: none;
-        transition: background 0.15s ease;
-      }
-
-      .octogpt-sidebar__settings-slider::-moz-range-thumb:hover {
-        background: #333333;
-      }
-
-      :host-context(.dark) .octogpt-sidebar__settings-slider,
-      :host-context(.dark-theme) .octogpt-sidebar__settings-slider {
-        background: #3f3f3f;
-      }
-
-      :host-context(.dark) .octogpt-sidebar__settings-slider::-webkit-slider-thumb,
-      :host-context(.dark-theme) .octogpt-sidebar__settings-slider::-webkit-slider-thumb {
-        background: #ececec;
-      }
-
-      :host-context(.dark) .octogpt-sidebar__settings-slider::-webkit-slider-thumb:hover,
-      :host-context(.dark-theme) .octogpt-sidebar__settings-slider::-webkit-slider-thumb:hover {
-        background: #ffffff;
-      }
-
-      :host-context(.dark) .octogpt-sidebar__settings-slider::-moz-range-thumb,
-      :host-context(.dark-theme) .octogpt-sidebar__settings-slider::-moz-range-thumb {
-        background: #ececec;
-      }
-
-      :host-context(.dark) .octogpt-sidebar__settings-slider::-moz-range-thumb:hover,
-      :host-context(.dark-theme) .octogpt-sidebar__settings-slider::-moz-range-thumb:hover {
-        background: #ffffff;
-      }
-
-      .octogpt-sidebar__settings-input {
-        flex: 1 1 60px;
-        min-width: 60px;
-        max-width: 100%;
-        padding: 6px 8px;
-        border: 1px solid #e5e5e5;
-        border-radius: 6px;
-        background: #ffffff;
-        color: #0d0d0d;
-        font-size: 13px;
-        text-align: center;
-        outline: none;
-        transition: border-color 0.15s ease;
-      }
-
-      .octogpt-sidebar__settings-input:focus {
-        border-color: #0d0d0d;
-      }
-
-      :host-context(.dark) .octogpt-sidebar__settings-input,
-      :host-context(.dark-theme) .octogpt-sidebar__settings-input {
-        background: #2f2f2f;
-        border-color: #3f3f3f;
-        color: #ececec;
-      }
-
-      :host-context(.dark) .octogpt-sidebar__settings-input:focus,
-      :host-context(.dark-theme) .octogpt-sidebar__settings-input:focus {
-        border-color: #ececec;
-      }
-
-      .octogpt-sidebar__settings-hint {
-        font-size: 12px;
-        color: #6b6b6b;
-        line-height: 1.4;
-      }
-
-      :host-context(.dark) .octogpt-sidebar__settings-hint,
-      :host-context(.dark-theme) .octogpt-sidebar__settings-hint {
-        color: #b4b4b4;
-      }
-
-      .octogpt-sidebar__shortcuts-list {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-      }
-
-      .octogpt-sidebar__shortcut-item {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-        padding: 8px 0;
-      }
-
-      .octogpt-sidebar__shortcut-keys {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        flex-shrink: 0;
-      }
-
-      .octogpt-sidebar__key {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        min-width: 24px;
-        height: 24px;
-        padding: 0 6px;
-        font-size: 11px;
-        font-weight: 600;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-        color: #0d0d0d;
-        background: #f0f0f0;
-        border: 1px solid #e5e5e5;
-        border-radius: 4px;
-        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-      }
-
-      :host-context(.dark) .octogpt-sidebar__key,
-      :host-context(.dark-theme) .octogpt-sidebar__key {
-        color: #ececec;
-        background: #2f2f2f;
-        border-color: #3f3f3f;
-      }
-
-      .octogpt-sidebar__key-separator {
-        font-size: 12px;
-        color: #6b6b6b;
-        font-weight: 400;
-      }
-
-      :host-context(.dark) .octogpt-sidebar__key-separator,
-      :host-context(.dark-theme) .octogpt-sidebar__key-separator {
-        color: #b4b4b4;
-      }
-
-      .octogpt-sidebar__shortcut-description {
-        font-size: 12px;
-        color: #6b6b6b;
-        text-align: right;
-        flex: 1;
-      }
-
-      :host-context(.dark) .octogpt-sidebar__shortcut-description,
-      :host-context(.dark-theme) .octogpt-sidebar__shortcut-description {
-        color: #b4b4b4;
-      }
-
       /* Loading indicator */
       .octogpt-sidebar__loading {
         display: flex;
@@ -1041,25 +935,6 @@ class OctoGPTSidebar {
     const logoBtn = this.shadowRoot.querySelector('.octogpt-sidebar__logo-btn');
     if (logoBtn) {
       logoBtn.addEventListener('click', this.toggleSettings);
-    }
-
-    // Settings controls
-    const scrollSlider = this.shadowRoot.querySelector('.octogpt-sidebar__settings-slider');
-    const scrollInput = this.shadowRoot.querySelector('.octogpt-sidebar__settings-input');
-    if (scrollSlider && scrollInput) {
-      scrollSlider.addEventListener('input', (e) => {
-        const value = parseInt(e.target.value, 10);
-        scrollInput.value = value;
-        this.handleScrollDurationChange(value);
-      });
-      scrollInput.addEventListener('input', (e) => {
-        let value = parseInt(e.target.value, 10);
-        if (isNaN(value)) value = 0;
-        value = Math.max(0, Math.min(600, value));
-        scrollSlider.value = value;
-        scrollInput.value = value;
-        this.handleScrollDurationChange(value);
-      });
     }
 
     // Sidebar hover events for unpinned mode
@@ -1240,6 +1115,9 @@ class OctoGPTSidebar {
     
     // Adjust site layout without animation during drag
     this.adjustSiteLayout(clampedWidth, false);
+
+    // Update settings panel position
+    this.updateSettingsPanelPosition();
   }
 
   /**
@@ -1278,7 +1156,14 @@ class OctoGPTSidebar {
    * Handle keyboard shortcuts
    */
   handleKeyDown(event) {
-    // Don't trigger if user is typing in an input
+    // ESC: Close settings panel (always works, even in input fields)
+    if (event.key === 'Escape' && this.isSettingsOpen) {
+      event.preventDefault();
+      this.closeSettings();
+      return;
+    }
+
+    // Don't trigger other shortcuts if user is typing in an input
     if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA' || 
         event.target.getAttribute('contenteditable') === 'true') {
       return;
@@ -1421,6 +1306,9 @@ class OctoGPTSidebar {
       pinBtn.setAttribute('title', this.isPinned ? 'Unpin sidebar' : 'Pin sidebar');
       pinBtn.setAttribute('aria-label', this.isPinned ? 'Unpin sidebar' : 'Pin sidebar');
     }
+
+    // Update settings panel position when sidebar visibility changes
+    this.updateSettingsPanelPosition();
   }
 
   /**
@@ -1566,81 +1454,50 @@ class OctoGPTSidebar {
     const loading = this.shadowRoot.querySelector('.octogpt-sidebar__loading');
     const promptList = this.shadowRoot.querySelector('.octogpt-sidebar__prompt-list');
     const emptyState = this.shadowRoot.querySelector('.octogpt-sidebar__empty');
-    const settings = this.shadowRoot.querySelector('.octogpt-sidebar__settings');
 
-    if (!loading || !promptList || !emptyState || !settings) return;
+    if (!loading || !promptList || !emptyState) return;
 
-    // Show/hide settings vs prompts based on mode
-    const collapseAllBtn = this.shadowRoot.querySelector('.octogpt-sidebar__collapse-all-btn');
-    
-    if (this.isSettingsMode) {
+    // Clear existing content
+    promptList.innerHTML = '';
+
+    // New chat state: show message without spinner
+    if (this.isNewChat && this.prompts.length === 0) {
       loading.style.display = 'none';
+      emptyState.style.display = 'block';
+      emptyState.textContent = 'Start a conversation to see prompts here';
       promptList.style.display = 'none';
-      emptyState.style.display = 'none';
-      settings.style.display = 'block';
-      
-      // Hide collapse-all button in settings mode
-      if (collapseAllBtn) {
-        collapseAllBtn.style.display = 'none';
-      }
-      
-      // Update settings controls with current value
-      const scrollSlider = this.shadowRoot.querySelector('.octogpt-sidebar__settings-slider');
-      const scrollInput = this.shadowRoot.querySelector('.octogpt-sidebar__settings-input');
-      if (scrollSlider && scrollInput) {
-        scrollSlider.value = this.config.scrollDuration;
-        scrollInput.value = this.config.scrollDuration;
-      }
-    } else {
-      settings.style.display = 'none';
-      
-      // Show collapse-all button in prompts mode
-      if (collapseAllBtn) {
-        collapseAllBtn.style.display = 'flex';
-      }
-      
-      // Clear existing content
-      promptList.innerHTML = '';
-
-      // New chat state: show message without spinner
-      if (this.isNewChat && this.prompts.length === 0) {
-        loading.style.display = 'none';
-        emptyState.style.display = 'block';
-        emptyState.textContent = 'Start a conversation to see prompts here';
-        promptList.style.display = 'none';
-        return;
-      }
-
-      // Show loading state while waiting for prompts
-      if (this.isLoading && this.prompts.length === 0) {
-        loading.style.display = 'flex';
-        emptyState.style.display = 'none';
-        promptList.style.display = 'none';
-        this.updateLoadingText();
-        return;
-      }
-
-      loading.style.display = 'none';
-
-      if (this.prompts.length === 0) {
-        emptyState.style.display = 'block';
-        emptyState.textContent = 'No prompts found';
-        promptList.style.display = 'none';
-        return;
-      }
-
-      emptyState.style.display = 'none';
-      promptList.style.display = 'flex';
-
-      // Render each prompt
-      this.prompts.forEach((prompt, index) => {
-        const promptItem = this.createPromptItem(prompt, index);
-        promptList.appendChild(promptItem);
-      });
-
-      // Update collapse-all button state
-      this.updateCollapseAllButton();
+      return;
     }
+
+    // Show loading state while waiting for prompts
+    if (this.isLoading && this.prompts.length === 0) {
+      loading.style.display = 'flex';
+      emptyState.style.display = 'none';
+      promptList.style.display = 'none';
+      this.updateLoadingText();
+      return;
+    }
+
+    loading.style.display = 'none';
+
+    if (this.prompts.length === 0) {
+      emptyState.style.display = 'block';
+      emptyState.textContent = 'No prompts found';
+      promptList.style.display = 'none';
+      return;
+    }
+
+    emptyState.style.display = 'none';
+    promptList.style.display = 'flex';
+
+    // Render each prompt
+    this.prompts.forEach((prompt, index) => {
+      const promptItem = this.createPromptItem(prompt, index);
+      promptList.appendChild(promptItem);
+    });
+
+    // Update collapse-all button state
+    this.updateCollapseAllButton();
   }
 
   /**
@@ -2361,11 +2218,14 @@ class OctoGPTSidebar {
   }
 
   /**
-   * Toggle between settings and prompts view
+   * Toggle settings panel open/close
    */
   toggleSettings() {
-    this.isSettingsMode = !this.isSettingsMode;
-    this.render();
+    if (this.isSettingsOpen) {
+      this.closeSettings();
+    } else {
+      this.openSettings();
+    }
   }
 
   /**
@@ -2388,12 +2248,13 @@ class OctoGPTSidebar {
     }
     // Cancel new chat detection timer
     this.cancelNewChatDetection();
-    // Remove the entire root container (includes sidebar and slab)
+    // Remove the entire root container (includes sidebar, slab, and settings panel)
     if (this.rootContainer && this.rootContainer.parentNode) {
       this.rootContainer.parentNode.removeChild(this.rootContainer);
     }
     this.sidebar = null;
     this.slab = null;
+    this.settingsPanel = null;
     this.rootContainer = null;
   }
 }
