@@ -1351,9 +1351,9 @@ class OctoGPTSidebar {
     if (state) {
       this.isLoading = true;
       this.isNewChat = false; // Loading means not a new chat state
-      console.log('[OctoGPT]', window.location.pathname, '- Loading state:', state === 'waiting' ? 'Waiting for chat thread' : 'Parsing chat thread');
+      log.nav(`Loading state: ${state === 'waiting' ? 'Waiting for chat thread' : 'Parsing chat thread'}`);
     } else {
-      console.log('[OctoGPT]', window.location.pathname, '- Loading state cleared');
+      log.nav('Loading state cleared');
     }
     this.updateLoadingText();
     // Trigger render to ensure loading state is visible
@@ -1371,13 +1371,13 @@ class OctoGPTSidebar {
     if (isNew) {
       this.isLoading = false;
       this.loadingState = null;
-      console.log('[OctoGPT]', window.location.pathname, '- New chat state: showing "Start a conversation" text');
+      log.nav('New chat state: showing "Start a conversation" text');
     } else {
       // Transitioning out of new chat state means we're loading an existing chat
       // Set loading state immediately to avoid flash of empty content
       this.isLoading = true;
       this.loadingState = 'waiting';
-      console.log('[OctoGPT]', window.location.pathname, '- New chat state: cleared, transitioning to loading');
+      log.nav('New chat state: cleared, transitioning to loading');
     }
     this.render();
   }
