@@ -1,12 +1,12 @@
 /**
  * OctoGPT Content Script
- * Main entry point that runs on ChatGPT and Gemini pages
+ * Main entry point that runs on ChatGPT, Gemini, and Claude pages
  */
 
 class OctoGPT {
   constructor() {
     this.parser = null; // Will be set based on detected site
-    this.site = null; // 'chatgpt' or 'gemini'
+    this.site = null; // 'chatgpt', 'gemini', or 'claude'
     this.sidebar = null;
     this.observer = null;
     this.prompts = [];
@@ -29,6 +29,10 @@ class OctoGPT {
   detectSite() {
     const hostname = window.location.hostname;
     const pathname = window.location.pathname;
+
+    if (hostname.includes('claude.ai')) {
+      return 'claude';
+    }
 
     if (hostname.includes('gemini.google.com') || hostname.includes('aistudio.google.com')) {
       return 'gemini';
@@ -55,7 +59,14 @@ class OctoGPT {
     // Detect site and initialize appropriate parser
     this.site = this.detectSite();
     
-    if (this.site === 'gemini') {
+    if (this.site === 'claude') {
+      if (typeof ClaudeParser === 'undefined') {
+        log.error('ClaudeParser not available');
+        return;
+      }
+      this.parser = new ClaudeParser();
+      log.info('Detected Claude, initializing Claude parser...');
+    } else if (this.site === 'gemini') {
       if (typeof GeminiParser === 'undefined') {
         log.error('GeminiParser not available');
         return;
@@ -94,7 +105,16 @@ class OctoGPT {
         const main = document.querySelector('main');
         if (!main) return false;
 
-        if (this.site === 'gemini') {
+        if (this.site === 'claude') {
+          // Claude: check for message elements or input area
+          const hasContent = document.querySelector('[data-testid*="message"]') ||
+                             document.querySelector('[class*="human"]') ||
+                             document.querySelector('[class*="assistant"]');
+          const hasInput = document.querySelector('[contenteditable="true"]') ||
+                          document.querySelector('textarea') ||
+                          document.querySelector('[class*="input"]');
+          return hasContent || hasInput;
+        } else if (this.site === 'gemini') {
           // Gemini: check for user-query or model-response or input area
           const hasContent = document.querySelector('user-query') ||
                              document.querySelector('model-response') ||
@@ -136,7 +156,11 @@ class OctoGPT {
     const pathname = window.location.pathname;
     let isNew = false;
 
-    if (this.site === 'gemini') {
+    if (this.site === 'claude') {
+      // Claude new chat: /new or / (no /chat/ segment with ID)
+      // Existing chat: /chat/abc123...
+      isNew = pathname === '/new' || pathname === '/' || !pathname.startsWith('/chat/');
+    } else if (this.site === 'gemini') {
       // Gemini new chat: /app or /app/ (no ID after)
       // Existing chat: /app/abc123...
       isNew = pathname === '/app' || pathname === '/app/';
@@ -193,7 +217,12 @@ class OctoGPT {
    * Check if conversation content exists in DOM
    */
   hasConversationContent() {
-    if (this.site === 'gemini') {
+    if (this.site === 'claude') {
+      return !!(document.querySelector('[data-testid*="message"]') ||
+                document.querySelector('[class*="human"]') ||
+                document.querySelector('[class*="assistant"]') ||
+                document.querySelector('[class*="turn"]'));
+    } else if (this.site === 'gemini') {
       return !!(document.querySelector('user-query') || 
                 document.querySelector('model-response') ||
                 document.querySelector('.conversation-container'));
@@ -299,7 +328,13 @@ class OctoGPT {
    * Check if any response is currently streaming
    */
   isStreaming() {
-    if (this.site === 'gemini') {
+    if (this.site === 'claude') {
+      // Claude streaming indicators
+      const streamingIndicators = document.querySelectorAll(
+        '[data-is-streaming="true"], [class*="streaming"], [aria-busy="true"]'
+      );
+      return streamingIndicators.length > 0;
+    } else if (this.site === 'gemini') {
       // Gemini streaming indicators
       const streamingIndicators = document.querySelectorAll(
         '[class*="streaming"], [aria-busy="true"], .response-container-header-processing-state:not(:empty)'
@@ -413,7 +448,20 @@ class OctoGPT {
   isMessageNode(node) {
     if (!node.querySelector) return false;
 
-    if (this.site === 'gemini') {
+    if (this.site === 'claude') {
+      // Claude message indicators
+      const hasMessageTestId = node.hasAttribute?.('data-testid') &&
+        (node.getAttribute('data-testid').includes('message') ||
+         node.getAttribute('data-testid').includes('human') ||
+         node.getAttribute('data-testid').includes('assistant'));
+      const hasHumanClass = node.classList?.contains('human-turn') || 
+                           node.className?.includes?.('human');
+      const hasAssistantClass = node.classList?.contains('assistant-turn') || 
+                               node.className?.includes?.('assistant');
+      const hasMessageContent = node.querySelector?.('[class*="markdown"], .whitespace-pre-wrap, [class*="prose"]');
+      
+      return hasMessageTestId || hasHumanClass || hasAssistantClass || hasMessageContent;
+    } else if (this.site === 'gemini') {
       // Gemini message indicators
       const isUserQuery = node.tagName === 'USER-QUERY' || node.querySelector?.('user-query');
       const isModelResponse = node.tagName === 'MODEL-RESPONSE' || node.querySelector?.('model-response');

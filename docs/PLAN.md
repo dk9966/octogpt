@@ -244,7 +244,7 @@ The angle bracket notation `< >` indicates the edited prompt that created the cu
 - Prompt statistics (total count, average length, branch count, etc.)
 - Tag/label prompts for organization
 - Prompt templates/snippets
-- Integration with other AI chat platforms
+- Integration with other AI chat platforms (Claude support added)
 - Prompt history across all conversations
 - Collaborative features (share prompt collections)
 - Branch visualization: show alternate branches that exist but aren't currently active

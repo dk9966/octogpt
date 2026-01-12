@@ -1,6 +1,6 @@
 # OctoGPT
 
-A browser extension that adds a navigable sidebar to ChatGPT and Gemini, displaying all prompts and headers in your conversation.
+A browser extension that adds a navigable sidebar to ChatGPT, Gemini, and Claude, displaying all prompts and headers in your conversation.
 
 ## Features
 
@@ -19,7 +19,7 @@ If OctoGPT is not available on the Chrome Web Store, install it manually:
    - Firefox: `about:debugging#/runtime/this-firefox`
 3. Enable Developer mode
 4. Load the extension (Chrome: "Load unpacked" | Firefox: "Load Temporary Add-on")
-5. Navigate to [ChatGPT](https://chat.openai.com) or [Gemini](https://gemini.google.com)
+5. Navigate to [ChatGPT](https://chat.openai.com), [Gemini](https://gemini.google.com), or [Claude](https://claude.ai)
 
 ## Usage
 
@@ -30,6 +30,7 @@ Open any conversation and press `Cmd/Ctrl + H` to toggle the sidebar. Click any 
 - chat.openai.com
 - chatgpt.com
 - gemini.google.com
+- claude.ai
 
 ## Technical Details
 

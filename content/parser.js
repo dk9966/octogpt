@@ -1,6 +1,6 @@
 /**
  * OctoGPT Parser Module
- * Handles extraction of user prompts from ChatGPT and Gemini DOM
+ * Handles extraction of user prompts from ChatGPT, Gemini, and Claude DOM
  */
 
 /**
@@ -720,8 +720,283 @@ class GeminiParser extends BaseParser {
     }
 }
 
+/**
+ * Claude parser implementation
+ * Note: DOM selectors may need adjustment based on Claude's current structure
+ */
+class ClaudeParser extends BaseParser {
+    constructor() {
+        super();
+        // Claude's DOM selectors - these may need updates as Claude changes
+        // Primary selectors based on common patterns
+        this.selectors = {
+            conversationContainer: '[class*="conversation"], main',
+            // Claude uses data-testid attributes for message turns
+            userMessages: '[data-testid="user-message"], [data-is-streaming="false"][class*="human"], .human-turn',
+            assistantMessages: '[data-testid="assistant-message"], [class*="assistant"], .assistant-turn',
+            // Text content selectors
+            userQueryText: '.whitespace-pre-wrap, [class*="prose"], p',
+            assistantContent: '[class*="markdown"], [class*="prose"]',
+            // Message containers
+            messageGroup: '[class*="message-row"], [class*="turn"]',
+        };
+    }
+
+    /**
+     * Get the current conversation ID from URL
+     * Claude URLs: /chat/{uuid} for existing chats, /new for new chats
+     */
+    getConversationId() {
+        const match = window.location.pathname.match(/\/chat\/([a-zA-Z0-9-]+)/);
+        return match ? match[1] : null;
+    }
+
+    /**
+     * Find all user messages in the DOM
+     */
+    findUserMessages() {
+        const messages = [];
+        
+        // Try primary selector first
+        let userElements = document.querySelectorAll(this.selectors.userMessages);
+        
+        // Fallback: look for elements with human/user indicators
+        if (userElements.length === 0) {
+            log.info('No user messages found with primary selector, trying fallback');
+            userElements = this.findUserMessagesWithFallback();
+        }
+
+        userElements.forEach((element, index) => {
+            const promptData = this.extractPromptData(element, index);
+            if (promptData) {
+                messages.push(promptData);
+            }
+        });
+
+        return messages;
+    }
+
+    /**
+     * Fallback method to find user messages using alternative selectors
+     */
+    findUserMessagesWithFallback() {
+        const elements = [];
+        
+        // Look for message groups and identify human messages
+        const allMessages = document.querySelectorAll(this.selectors.messageGroup);
+        
+        allMessages.forEach(msg => {
+            // Check various indicators that this is a user/human message
+            const isHuman = msg.querySelector('[class*="human"]') ||
+                           msg.getAttribute('data-testid')?.includes('human') ||
+                           msg.getAttribute('data-testid')?.includes('user') ||
+                           msg.classList.contains('human-turn');
+            
+            if (isHuman) {
+                elements.push(msg);
+            }
+        });
+        
+        // Additional fallback: look for specific text content patterns
+        if (elements.length === 0) {
+            const contentBlocks = document.querySelectorAll('main [class*="whitespace-pre-wrap"]');
+            contentBlocks.forEach(block => {
+                // Find parent that might be the message container
+                const parent = block.closest('[class*="message"], [class*="turn"]');
+                if (parent && this.looksLikeUserMessage(parent)) {
+                    elements.push(parent);
+                }
+            });
+        }
+
+        return elements;
+    }
+
+    /**
+     * Heuristic to identify if an element looks like a user message
+     */
+    looksLikeUserMessage(element) {
+        // Check for assistant-specific indicators
+        const hasAssistantIndicator = element.querySelector('[class*="assistant"]') ||
+                                      element.querySelector('[class*="claude"]') ||
+                                      element.querySelector('svg[class*="logo"]');
+        
+        if (hasAssistantIndicator) return false;
+        
+        // Check for copy buttons (typically on assistant messages)
+        const hasCopyButton = element.querySelector('button[aria-label*="Copy" i]');
+        if (hasCopyButton) return false;
+        
+        // Must have some text content
+        const text = element.textContent?.trim();
+        return text && text.length > 0;
+    }
+
+    /**
+     * Extract prompt data from a user message element
+     */
+    extractPromptData(element, index) {
+        try {
+            const textContent = this.getMessageText(element);
+
+            if (!textContent || textContent.trim().length === 0) {
+                return null;
+            }
+
+            const branchInfo = this.getBranchInfo(element);
+            const isEdited = branchInfo?.hasBranches ?? false;
+
+            const headings = this.extractAssistantHeadings(element);
+
+            log.info(`Prompt ${index}: "${textContent.substring(0, 30)}..." -> ${headings.length} headings`);
+            if (headings.length > 0) {
+                log.info(`  Headings for prompt ${index}:`, headings.map(h => h.text));
+            }
+
+            const promptData = {
+                id: this.generatePromptId(element, index),
+                index: index,
+                text: textContent,
+                preview: this.generatePreview(textContent),
+                timestamp: Date.now(),
+                isEdited: isEdited,
+                branchInfo: branchInfo,
+                element: element,
+                headings: headings,
+            };
+
+            return promptData;
+        } catch (error) {
+            log.error('Error extracting prompt data:', error);
+            return null;
+        }
+    }
+
+    /**
+     * Get the text content from a user message element
+     */
+    getMessageText(element) {
+        // Try specific content selectors
+        const textContainer = element.querySelector(this.selectors.userQueryText);
+        if (textContainer) {
+            return this.cleanText(textContainer.textContent);
+        }
+
+        // Fallback to direct text content
+        const text = element.textContent;
+        if (text) {
+            return this.cleanText(text);
+        }
+
+        return '';
+    }
+
+    /**
+     * Extract headings from the assistant response following a user message
+     */
+    extractAssistantHeadings(userElement) {
+        // Find the next sibling that is an assistant message
+        let nextElement = userElement.nextElementSibling;
+        let assistantContainer = null;
+        
+        // Walk through siblings to find the assistant response
+        while (nextElement) {
+            const isAssistant = nextElement.querySelector('[class*="assistant"]') ||
+                               nextElement.querySelector(this.selectors.assistantMessages) ||
+                               nextElement.getAttribute('data-testid')?.includes('assistant');
+            
+            if (isAssistant) {
+                assistantContainer = nextElement;
+                break;
+            }
+            
+            // If we hit another user message, stop looking
+            const isUser = nextElement.querySelector('[class*="human"]') ||
+                          nextElement.getAttribute('data-testid')?.includes('user') ||
+                          nextElement.getAttribute('data-testid')?.includes('human');
+            if (isUser) break;
+            
+            nextElement = nextElement.nextElementSibling;
+        }
+
+        if (!assistantContainer) {
+            log.info('No assistant response found for this user message');
+            return [];
+        }
+
+        return this.extractHeadingsFromElement(assistantContainer);
+    }
+
+    /**
+     * Extract headings from an assistant response element
+     */
+    extractHeadingsFromElement(container) {
+        // Find the markdown content area
+        const markdownContainer = container.querySelector(this.selectors.assistantContent) || container;
+        
+        // Generate a unique ID for this container
+        const containerId = container.getAttribute('data-testid') || 
+                           `claude-response-${Date.now()}`;
+
+        const headingLevels = ['h2', 'h3', 'h4', 'h5'];
+        
+        for (const level of headingLevels) {
+            const headings = markdownContainer.querySelectorAll(level);
+            if (headings.length > 0) {
+                const result = Array.from(headings).map((h, idx) => ({
+                    level: level,
+                    text: h.textContent.trim(),
+                    turnId: containerId,
+                    index: idx,
+                }));
+                log.info(`Extracted ${level} headings:`, result.map(h => h.text));
+                return result;
+            }
+        }
+
+        log.info('No headings found');
+        return [];
+    }
+
+    /**
+     * Get branch information for a prompt
+     * Claude does not currently support branching/editing like ChatGPT
+     */
+    getBranchInfo(element) {
+        // Claude doesn't have branch navigation UI like ChatGPT
+        // Check for any edit indicators
+        const editButton = element.querySelector('[aria-label*="edit" i], [data-testid*="edit"]');
+        
+        return { 
+            hasBranches: false, 
+            hasEdit: !!editButton 
+        };
+    }
+
+    /**
+     * Generate a unique ID for a prompt
+     */
+    generatePromptId(element, index) {
+        // Try to use data-testid if available
+        const testId = element.getAttribute('data-testid');
+        if (testId) {
+            return testId;
+        }
+
+        // Try parent container ID
+        const parent = element.closest('[data-testid]');
+        if (parent) {
+            return parent.getAttribute('data-testid');
+        }
+
+        // Fallback to index-based ID
+        return `prompt-${this.conversationId}-${index}`;
+    }
+}
+
 // Export for use in content script
 window.ChatGPTParser = ChatGPTParser;
 window.GeminiParser = GeminiParser;
+window.ClaudeParser = ClaudeParser;
 window.BaseParser = BaseParser;
 

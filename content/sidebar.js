@@ -66,6 +66,10 @@ class OctoGPTSidebar {
     const hostname = window.location.hostname;
     const pathname = window.location.pathname;
 
+    if (hostname.includes('claude.ai')) {
+      return 'claude';
+    }
+
     if (hostname.includes('gemini.google.com') || hostname.includes('aistudio.google.com')) {
       return 'gemini';
     }
@@ -1765,7 +1769,17 @@ class OctoGPTSidebar {
    * Re-queries to avoid stale references after React re-renders
    */
   findHeadingElement(heading) {
-    if (this.site === 'gemini') {
+    if (this.site === 'claude') {
+      // Claude: use data-testid or generated ID
+      const container = document.querySelector(`[data-testid="${heading.turnId}"]`) ||
+                       document.querySelector(`[class*="assistant"]`);
+      if (!container) return null;
+
+      // Find markdown container
+      const markdownContainer = container.querySelector('[class*="markdown"], [class*="prose"]') || container;
+      const headings = markdownContainer.querySelectorAll(heading.level);
+      return headings[heading.index] || null;
+    } else if (this.site === 'gemini') {
       // Gemini: use conversation container ID
       const container = document.getElementById(heading.turnId) || 
                        document.querySelector(`.conversation-container[id="${heading.turnId}"]`);
@@ -1882,7 +1896,35 @@ class OctoGPTSidebar {
    * Find the scroll container for the current site
    */
   findScrollContainer() {
-    if (this.site === 'gemini') {
+    if (this.site === 'claude') {
+      // Claude scroll container patterns
+      const selectors = [
+        'main [class*="overflow-y-auto"]',
+        'main [class*="overflow-auto"]',
+        '[class*="conversation"] [class*="overflow"]'
+      ];
+
+      for (const selector of selectors) {
+        const container = document.querySelector(selector);
+        if (container && container.scrollHeight > container.clientHeight) {
+          return container;
+        }
+      }
+
+      // Fallback: find scrollable ancestor of any message
+      const message = document.querySelector('[class*="human"], [class*="assistant"]');
+      if (message) {
+        let parent = message.parentElement;
+        while (parent && parent !== document.body) {
+          const style = getComputedStyle(parent);
+          const isScrollable = style.overflowY === 'auto' || style.overflowY === 'scroll';
+          if (isScrollable && parent.scrollHeight > parent.clientHeight) {
+            return parent;
+          }
+          parent = parent.parentElement;
+        }
+      }
+    } else if (this.site === 'gemini') {
       // Gemini scroll container patterns
       const selectors = [
         'main [class*="infinite-scroller"]',
