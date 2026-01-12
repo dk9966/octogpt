@@ -160,12 +160,14 @@ class OctoGPTSidebar {
     this.rootContainer = document.createElement('div');
     this.rootContainer.id = 'octogpt-root';
     this.rootContainer.setAttribute('data-octogpt', 'true');
+    this.rootContainer.setAttribute('data-site', this.site);
     document.body.appendChild(this.rootContainer);
 
     // Create sidebar inside our container
     this.sidebar = document.createElement('div');
     this.sidebar.id = 'octogpt-sidebar';
     this.sidebar.className = 'octogpt-sidebar';
+    this.sidebar.setAttribute('data-site', this.site);
 
     // Create shadow root for style isolation
     this.shadowRoot = this.sidebar.attachShadow({ mode: 'open' });
@@ -908,6 +910,156 @@ class OctoGPTSidebar {
         to {
           transform: rotate(360deg);
         }
+      }
+
+      /* Claude-specific light mode styles (warm cream palette) */
+      :host([data-site="claude"]) .octogpt-sidebar__container {
+        background: #FAF9F7;
+        border-left-color: #E6E3DE;
+        color: #1A1A1A;
+      }
+
+      :host([data-site="claude"]) .octogpt-sidebar__logo-text {
+        color: #1A1A1A;
+      }
+
+      :host([data-site="claude"]) .octogpt-sidebar__collapse-all-btn:hover,
+      :host([data-site="claude"]) .octogpt-sidebar__pin-btn:hover {
+        background: #F0EDE8;
+        color: #1A1A1A;
+      }
+
+      :host([data-site="claude"]) .octogpt-sidebar__pin-btn--active {
+        color: #1A1A1A;
+        background: #E8E4DF;
+      }
+
+      :host([data-site="claude"]) .octogpt-sidebar__prompt-item:hover {
+        background: #F0EDE8;
+      }
+
+      :host([data-site="claude"]) .octogpt-sidebar__prompt-item--active {
+        background: #E8E4DF;
+      }
+
+      :host([data-site="claude"]) .octogpt-sidebar__prompt-text {
+        color: #1A1A1A;
+      }
+
+      :host([data-site="claude"]) .octogpt-sidebar__content::-webkit-scrollbar-thumb {
+        background: rgba(0, 0, 0, 0.08);
+      }
+
+      :host([data-site="claude"]) .octogpt-sidebar__content::-webkit-scrollbar-thumb:hover {
+        background: rgba(0, 0, 0, 0.15);
+      }
+
+      :host([data-site="claude"]) .octogpt-sidebar__loading-spinner {
+        border-color: #E6E3DE;
+        border-top-color: #1A1A1A;
+      }
+
+      :host([data-site="claude"]) .octogpt-sidebar__headings {
+        border-left-color: #E6E3DE;
+      }
+
+      :host([data-site="claude"]) .octogpt-sidebar__heading-item:hover {
+        background: #F0EDE8;
+      }
+
+      :host([data-site="claude"]) .octogpt-sidebar__heading-item--active {
+        background: #E8E4DF;
+      }
+
+      :host([data-site="claude"]) .octogpt-sidebar__heading-item:hover .octogpt-sidebar__heading-text,
+      :host([data-site="claude"]) .octogpt-sidebar__heading-item--active .octogpt-sidebar__heading-text {
+        color: #1A1A1A;
+      }
+
+      /* Claude-specific dark mode styles (warm dark palette) */
+      :host([data-site="claude"]):host-context([data-theme="dark"]) .octogpt-sidebar__container {
+        background: #2F2F2E;
+        border-left-color: #434340;
+        color: #EEEEE8;
+      }
+
+      :host([data-site="claude"]):host-context([data-theme="dark"]) .octogpt-sidebar__logo-text {
+        color: #EEEEE8;
+      }
+
+      :host([data-site="claude"]):host-context([data-theme="dark"]) .octogpt-sidebar__collapse-all-btn,
+      :host([data-site="claude"]):host-context([data-theme="dark"]) .octogpt-sidebar__pin-btn {
+        color: #A5A5A0;
+      }
+
+      :host([data-site="claude"]):host-context([data-theme="dark"]) .octogpt-sidebar__collapse-all-btn:hover,
+      :host([data-site="claude"]):host-context([data-theme="dark"]) .octogpt-sidebar__pin-btn:hover {
+        background: #3B3B38;
+        color: #EEEEE8;
+      }
+
+      :host([data-site="claude"]):host-context([data-theme="dark"]) .octogpt-sidebar__pin-btn--active {
+        color: #EEEEE8;
+        background: #484845;
+      }
+
+      :host([data-site="claude"]):host-context([data-theme="dark"]) .octogpt-sidebar__prompt-item:hover {
+        background: #3B3B38;
+      }
+
+      :host([data-site="claude"]):host-context([data-theme="dark"]) .octogpt-sidebar__prompt-item--active {
+        background: #484845;
+      }
+
+      :host([data-site="claude"]):host-context([data-theme="dark"]) .octogpt-sidebar__prompt-text {
+        color: #EEEEE8;
+      }
+
+      :host([data-site="claude"]):host-context([data-theme="dark"]) .octogpt-sidebar__content::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.08);
+      }
+
+      :host([data-site="claude"]):host-context([data-theme="dark"]) .octogpt-sidebar__content::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.15);
+      }
+
+      :host([data-site="claude"]):host-context([data-theme="dark"]) .octogpt-sidebar__loading-spinner {
+        border-color: #434340;
+        border-top-color: #EEEEE8;
+      }
+
+      :host([data-site="claude"]):host-context([data-theme="dark"]) .octogpt-sidebar__loading-text {
+        color: #A5A5A0;
+      }
+
+      :host([data-site="claude"]):host-context([data-theme="dark"]) .octogpt-sidebar__empty {
+        color: #A5A5A0;
+      }
+
+      :host([data-site="claude"]):host-context([data-theme="dark"]) .octogpt-sidebar__headings {
+        border-left-color: #434340;
+      }
+
+      :host([data-site="claude"]):host-context([data-theme="dark"]) .octogpt-sidebar__heading-item:hover {
+        background: #3B3B38;
+      }
+
+      :host([data-site="claude"]):host-context([data-theme="dark"]) .octogpt-sidebar__heading-item--active {
+        background: #484845;
+      }
+
+      :host([data-site="claude"]):host-context([data-theme="dark"]) .octogpt-sidebar__heading-text {
+        color: #A5A5A0;
+      }
+
+      :host([data-site="claude"]):host-context([data-theme="dark"]) .octogpt-sidebar__heading-item:hover .octogpt-sidebar__heading-text,
+      :host([data-site="claude"]):host-context([data-theme="dark"]) .octogpt-sidebar__heading-item--active .octogpt-sidebar__heading-text {
+        color: #EEEEE8;
+      }
+
+      :host([data-site="claude"]):host-context([data-theme="dark"]) .octogpt-sidebar__resize-handle:hover,
+      :host([data-site="claude"]):host-context([data-theme="dark"]) .octogpt-sidebar__resize-handle--active {
+        background: rgba(255, 255, 255, 0.08);
       }
     `;
     this.shadowRoot.appendChild(style);
