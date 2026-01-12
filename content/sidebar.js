@@ -1351,6 +1351,9 @@ class OctoGPTSidebar {
     if (state) {
       this.isLoading = true;
       this.isNewChat = false; // Loading means not a new chat state
+      console.log('[OctoGPT]', window.location.pathname, '- Loading state:', state === 'waiting' ? 'Waiting for chat thread' : 'Parsing chat thread');
+    } else {
+      console.log('[OctoGPT]', window.location.pathname, '- Loading state cleared');
     }
     this.updateLoadingText();
     // Trigger render to ensure loading state is visible
@@ -1368,6 +1371,13 @@ class OctoGPTSidebar {
     if (isNew) {
       this.isLoading = false;
       this.loadingState = null;
+      console.log('[OctoGPT]', window.location.pathname, '- New chat state: showing "Start a conversation" text');
+    } else {
+      // Transitioning out of new chat state means we're loading an existing chat
+      // Set loading state immediately to avoid flash of empty content
+      this.isLoading = true;
+      this.loadingState = 'waiting';
+      console.log('[OctoGPT]', window.location.pathname, '- New chat state: cleared, transitioning to loading');
     }
     this.render();
   }
@@ -1424,19 +1434,11 @@ class OctoGPTSidebar {
 
   /**
    * Start timer to detect new/empty chat
-   * If no prompts appear within timeout, assume it's a new chat
+   * NOTE: This is now a no-op. New chat detection is handled by URL-based detection in content.js
    */
   startNewChatDetection() {
-    // Cancel any existing timer
-    this.cancelNewChatDetection();
-    
-    // Short fallback timeout - content.js should detect new chat immediately via hasConversationContent
-    // This is just a safety net in case DOM detection fails
-    this.newChatDetectionTimer = setTimeout(() => {
-      if (this.prompts.length === 0 && this.isLoading) {
-        this.setNewChat(true);
-      }
-    }, 500);
+    // No-op: URL-based detection in content.js handles new chat state now
+    // Timer-based detection was unreliable and caused false positives
   }
 
   /**

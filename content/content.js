@@ -130,6 +130,27 @@ class OctoGPT {
   }
 
   /**
+   * Check if the current URL indicates a new chat (no chat ID)
+   */
+  isNewChatUrl() {
+    const pathname = window.location.pathname;
+    let isNew = false;
+
+    if (this.site === 'gemini') {
+      // Gemini new chat: /app or /app/ (no ID after)
+      // Existing chat: /app/abc123...
+      isNew = pathname === '/app' || pathname === '/app/';
+    } else {
+      // ChatGPT new chat: / or empty (no /c/ segment)
+      // Existing chat: /c/abc123...
+      isNew = pathname === '/' || !pathname.startsWith('/c/');
+    }
+
+    console.log('[OctoGPT]', pathname, '- isNewChatUrl:', isNew);
+    return isNew;
+  }
+
+  /**
    * Setup the extension after page is ready
    */
   async setup() {
@@ -141,21 +162,20 @@ class OctoGPT {
       await this.sidebar.init();
     }
 
-    // Check if this is a new/empty chat on initial load
-    if (this.hasConversationContent()) {
-      // Content elements exist, try to extract prompts
-      this.extractAndLog();
-      
-      // If no prompts were found despite having content elements,
-      // this might be a new chat with system messages (e.g., ChatGPT welcome)
-      // Use timeout mechanism to determine if it's truly empty
-      if (this.prompts.length === 0) {
-        this.waitForPromptsOrNewChat();
-      }
-    } else {
-      // No content elements at all - definitely a new chat
+    // Check if this is a new/empty chat based on URL (no chat ID = new chat)
+    if (this.isNewChatUrl()) {
+      console.log('[OctoGPT]', window.location.pathname, '- Initial load: new chat page');
       if (this.sidebar) {
         this.sidebar.setNewChat(true);
+      }
+    } else {
+      console.log('[OctoGPT]', window.location.pathname, '- Initial load: existing chat');
+      // URL has a chat ID, extract prompts
+      this.extractAndLog();
+      
+      // If no prompts found yet, wait for them
+      if (this.prompts.length === 0) {
+        this.waitForPromptsOrNewChat();
       }
     }
 
@@ -229,16 +249,14 @@ class OctoGPT {
 
     // Update sidebar with new prompts
     if (this.sidebar) {
-      // If no content and no prompts while loading, this is a new chat - detect immediately
-      if (!hasContent && formattedPrompts.length === 0 && this.sidebar.isLoading) {
-        this.sidebar.setNewChat(true);
-        return;
-      }
-      
       this.sidebar.updatePrompts(formattedPrompts);
-      // Clear loading state once we have prompts
+      
       if (formattedPrompts.length > 0) {
+        // Clear loading state once we have prompts
         this.sidebar.setLoadingState(null);
+      } else if (this.isNewChatUrl()) {
+        // No prompts and new chat URL - show new chat state
+        this.sidebar.setNewChat(true);
       }
     }
 
@@ -346,6 +364,13 @@ class OctoGPT {
 
     // Callback for mutations
     const callback = (mutationsList, observer) => {
+      // Immediately check if we've navigated away from new chat
+      // This handles cases where the navigation listener doesn't fire
+      if (this.sidebar?.isNewChat && !this.isNewChatUrl()) {
+        console.log('[OctoGPT]', window.location.pathname, '- Mutation detected URL change from new chat, showing loading');
+        this.sidebar.setNewChat(false);
+      }
+
       let shouldUpdate = false;
 
       for (const mutation of mutationsList) {
@@ -448,15 +473,22 @@ class OctoGPT {
 
       if (currentUrl !== lastUrl) {
         lastUrl = currentUrl;
-        log.info('Navigation detected, re-initializing...');
 
-        // Set loading state immediately when navigating
-        if (this.sidebar) {
-          this.sidebar.setLoadingState('waiting');
+        // Check URL to determine if this is a new chat
+        if (this.isNewChatUrl()) {
+          console.log('[OctoGPT]', window.location.pathname, '- Navigated to: new chat page');
+          if (this.sidebar) {
+            this.sidebar.setNewChat(true);
+          }
+        } else {
+          console.log('[OctoGPT]', window.location.pathname, '- Navigated to: existing chat');
+          // URL has a chat ID, clear new chat state and show loading
+          if (this.sidebar) {
+            this.sidebar.setNewChat(false);
+            this.sidebar.setLoadingState('waiting');
+          }
+          this.waitForContentAndExtract();
         }
-
-        // Poll for content to appear, then extract
-        this.waitForContentAndExtract();
       }
     });
   }
@@ -482,9 +514,10 @@ class OctoGPT {
       }
 
       if (Date.now() - startTime > maxWait) {
-        // Timeout with no content - this is a new/empty chat
+        // Timeout - just clear loading, don't assume new chat
+        // (new chat state should only be set via direct detection in setup())
         if (this.sidebar) {
-          this.sidebar.setNewChat(true);
+          this.sidebar.setLoadingState(null);
         }
         return;
       }
@@ -516,9 +549,10 @@ class OctoGPT {
       }
 
       if (Date.now() - startTime > maxWait) {
-        // Timeout - no prompts found, this is a new/empty chat
+        // Timeout - just clear loading, don't assume new chat
+        // (new chat state should only be set via direct detection in setup())
         if (this.sidebar) {
-          this.sidebar.setNewChat(true);
+          this.sidebar.setLoadingState(null);
         }
         return;
       }

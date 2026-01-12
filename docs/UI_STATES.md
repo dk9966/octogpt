@@ -30,21 +30,16 @@ isNewChat = false;          // Page ready, but no conversation
 ## State Transitions
 
 ```
-Page Load
+Page Load / Navigation
     |
     v
-[Loading: waiting]  <-- "Waiting for chat thread"
+Check URL (isNewChatUrl)
     |
-    +-- Content found? --> [Loading: parsing] --> prompts found? --> [Prompts]
-    |                                               |
-    |                                               +-- no prompts --> [New Chat]
+    +-- New chat URL (no ID) --> [New Chat]
     |
-    +-- 2s timeout, no content --> [New Chat]
-
-Navigation (URL change)
-    |
-    v
-[Loading: waiting] --> same flow as above
+    +-- Has chat ID --> [Loading: waiting] --> content found --> [Loading: parsing] --> [Prompts]
+                                                   |
+                                                   +-- timeout --> [Empty fallback]
 ```
 
 ---
@@ -91,8 +86,11 @@ sidebar.setLoadingState(null);       // Clears loading
 
 **Triggered by:**
 
-1. **Timeout** - No content appears within 2 seconds after navigation
-2. **Direct detection** - `hasConversationContent()` returns false
+1. **URL-based detection** - `isNewChatUrl()` returns true (no chat ID in URL)
+   - ChatGPT: URL is `/` or doesn't start with `/c/`
+   - Gemini: URL is `/app` or `/app/`
+
+Note: Detection is based on URL patterns, not DOM selectors (which can be unreliable). Timeouts do NOT trigger new chat state.
 
 ```javascript
 // Set new chat state
@@ -131,46 +129,30 @@ if (this.prompts.length === 0) {
 
 ## Detection Logic (content.js)
 
-### Check for Conversation Content
+### Check for New Chat URL
 
 ```javascript
-hasConversationContent() {
-  // Gemini
+isNewChatUrl() {
+  const pathname = window.location.pathname;
+
   if (this.site === 'gemini') {
-    return !!(document.querySelector('user-query') || 
-              document.querySelector('model-response'));
+    // Gemini new chat: /app or /app/ (no ID after)
+    return pathname === '/app' || pathname === '/app/';
+  } else {
+    // ChatGPT new chat: / or no /c/ segment
+    return pathname === '/' || !pathname.startsWith('/c/');
   }
-  // ChatGPT
-  return !!(document.querySelector('[data-testid^="conversation-turn-"]') ||
-            document.querySelector('[data-message-author-role]'));
 }
 ```
 
-### Wait for Content or Timeout
+### Setup Flow
 
 ```javascript
-waitForContentAndExtract() {
-  const maxWait = 2000;  // 2 seconds
-  
-  const check = () => {
-    if (this.hasConversationContent()) {
-      this.extractAndLog();
-      // If still no prompts, wait more or declare new chat
-      if (this.prompts.length === 0) {
-        this.waitForPromptsOrNewChat();
-      }
-      return;
-    }
-
-    if (Date.now() - startTime > maxWait) {
-      // Timeout = new chat
-      this.sidebar.setNewChat(true);
-      return;
-    }
-
-    setTimeout(check, 100);
-  };
-  check();
+// In setup() and navigation handler:
+if (this.isNewChatUrl()) {
+  this.sidebar.setNewChat(true);  // URL has no chat ID
+} else {
+  this.extractAndLog();           // URL has chat ID, extract prompts
 }
 ```
 
