@@ -8,6 +8,7 @@
  * Set to true to enable console output
  */
 const DEBUG = false;
+const DEBUG_NAV = false;
 
 const log = {
   info: (...args) => DEBUG && console.log('[OctoGPT]', ...args),
@@ -15,6 +16,8 @@ const log = {
   error: (...args) => DEBUG && console.error('[OctoGPT]', ...args),
   group: (label) => DEBUG && console.group(label),
   groupEnd: () => DEBUG && console.groupEnd(),
+  // Navigation/state tracking - always logs (not gated by DEBUG)
+  nav: (msg) => DEBUG && DEBUG_NAV && console.log('[OctoGPT]', window.location.pathname, '-', msg),
 };
 
 /**

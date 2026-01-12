@@ -146,7 +146,7 @@ class OctoGPT {
       isNew = pathname === '/' || !pathname.startsWith('/c/');
     }
 
-    console.log('[OctoGPT]', pathname, '- isNewChatUrl:', isNew);
+    log.nav(`isNewChatUrl: ${isNew}`);
     return isNew;
   }
 
@@ -164,12 +164,12 @@ class OctoGPT {
 
     // Check if this is a new/empty chat based on URL (no chat ID = new chat)
     if (this.isNewChatUrl()) {
-      console.log('[OctoGPT]', window.location.pathname, '- Initial load: new chat page');
+      log.nav('Initial load: new chat page');
       if (this.sidebar) {
         this.sidebar.setNewChat(true);
       }
     } else {
-      console.log('[OctoGPT]', window.location.pathname, '- Initial load: existing chat');
+      log.nav('Initial load: existing chat');
       // URL has a chat ID, extract prompts
       this.extractAndLog();
       
@@ -367,7 +367,7 @@ class OctoGPT {
       // Immediately check if we've navigated away from new chat
       // This handles cases where the navigation listener doesn't fire
       if (this.sidebar?.isNewChat && !this.isNewChatUrl()) {
-        console.log('[OctoGPT]', window.location.pathname, '- Mutation detected URL change from new chat, showing loading');
+        log.nav('Mutation detected URL change from new chat, showing loading');
         this.sidebar.setNewChat(false);
       }
 
@@ -476,12 +476,12 @@ class OctoGPT {
 
         // Check URL to determine if this is a new chat
         if (this.isNewChatUrl()) {
-          console.log('[OctoGPT]', window.location.pathname, '- Navigated to: new chat page');
+          log.nav('Navigated to: new chat page');
           if (this.sidebar) {
             this.sidebar.setNewChat(true);
           }
         } else {
-          console.log('[OctoGPT]', window.location.pathname, '- Navigated to: existing chat');
+          log.nav('Navigated to: existing chat');
           // URL has a chat ID, clear new chat state and show loading
           if (this.sidebar) {
             this.sidebar.setNewChat(false);
