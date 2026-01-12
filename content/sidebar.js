@@ -22,6 +22,11 @@ class OctoGPTSidebar {
     this.loadingState = 'waiting'; // 'waiting' | 'parsing' | null
     this.isNewChat = false; // True when page is ready but has no conversation
     this.newChatDetectionTimer = null; // Timer for detecting new chat state
+    
+    // Keyboard navigation state
+    this.navigationIndex = -1; // Current position in flat navigation list (-1 = not navigating)
+    this.flatNavigationList = []; // Cached array of all navigable items (prompts + headers)
+    
     this.config = {
       defaultWidth: 200,
       minWidth: 120,
@@ -705,6 +710,24 @@ class OctoGPTSidebar {
         color: #ececec;
       }
 
+      .octogpt-sidebar__heading-item--active {
+        background: #e5e5e5;
+      }
+
+      .octogpt-sidebar__heading-item--active .octogpt-sidebar__heading-text {
+        color: #0d0d0d;
+      }
+
+      :host-context(.dark) .octogpt-sidebar__heading-item--active,
+      :host-context(.dark-theme) .octogpt-sidebar__heading-item--active {
+        background: #3f3f3f;
+      }
+
+      :host-context(.dark) .octogpt-sidebar__heading-item--active .octogpt-sidebar__heading-text,
+      :host-context(.dark-theme) .octogpt-sidebar__heading-item--active .octogpt-sidebar__heading-text {
+        color: #ececec;
+      }
+
       /* Settings page */
       .octogpt-sidebar__settings {
         padding: 16px;
@@ -1147,16 +1170,45 @@ class OctoGPTSidebar {
 
   /**
    * Handle keyboard shortcuts
-     */
+   */
   handleKeyDown(event) {
-    if ((event.metaKey || event.ctrlKey) && event.key === 'h') {
-      // Don't trigger if user is typing in an input
-      if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
-        return;
-      }
+    // Don't trigger if user is typing in an input
+    if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA' || 
+        event.target.getAttribute('contenteditable') === 'true') {
+      return;
+    }
 
+    // Cmd/Ctrl+H: Toggle sidebar
+    if ((event.metaKey || event.ctrlKey) && event.key === 'h') {
       event.preventDefault();
       this.toggle();
+      return;
+    }
+
+    // Alt+Up/Down: Navigate between prompts and headers
+    if (event.altKey && (event.key === 'ArrowUp' || event.key === 'ArrowDown')) {
+      event.preventDefault();
+      
+      // Build navigation list if needed
+      if (this.flatNavigationList.length === 0) {
+        this.buildNavigationList();
+      }
+      
+      if (this.flatNavigationList.length === 0) return;
+      
+      // On first navigation, find current visible position
+      if (this.navigationIndex === -1) {
+        this.navigationIndex = this.findVisibleNavigationIndex();
+      }
+      
+      // Calculate new index
+      const direction = event.key === 'ArrowUp' ? -1 : 1;
+      const newIndex = this.navigationIndex + direction;
+      
+      // Clamp to valid range
+      if (newIndex >= 0 && newIndex < this.flatNavigationList.length) {
+        this.navigateToIndex(newIndex);
+      }
     }
   }
 
@@ -1338,6 +1390,11 @@ class OctoGPTSidebar {
     }
     
     this.prompts = prompts || [];
+    
+    // Reset keyboard navigation state so next navigation recalculates from current scroll position
+    this.navigationIndex = -1;
+    this.flatNavigationList = [];
+    
     this.render();
   }
 
@@ -1890,6 +1947,205 @@ class OctoGPTSidebar {
     }
 
     return null;
+  }
+
+  /**
+   * Build a flat list of all navigable items (prompts + their headers)
+   * Used for Alt+Up/Down keyboard navigation
+   */
+  buildNavigationList() {
+    this.flatNavigationList = [];
+    
+    this.prompts.forEach((prompt, promptIndex) => {
+      // Add the prompt itself
+      this.flatNavigationList.push({
+        type: 'prompt',
+        promptIndex,
+        element: prompt.element,
+        prompt,
+      });
+      
+      // Add headings if present and not collapsed
+      if (prompt.headings && prompt.headings.length > 0 && !this.collapsedPrompts.has(promptIndex)) {
+        prompt.headings.forEach((heading, headingIndex) => {
+          this.flatNavigationList.push({
+            type: 'heading',
+            promptIndex,
+            headingIndex,
+            heading,
+          });
+        });
+      }
+    });
+    
+    return this.flatNavigationList;
+  }
+
+  /**
+   * Find the navigation index of the item closest to the viewport center
+   * Used to determine starting position for keyboard navigation
+   */
+  findVisibleNavigationIndex() {
+    if (this.flatNavigationList.length === 0) return 0;
+    
+    const scrollContainer = this.findScrollContainer();
+    if (!scrollContainer) return 0;
+    
+    const containerRect = scrollContainer.getBoundingClientRect();
+    const viewportCenter = containerRect.top + containerRect.height / 2;
+    
+    let closestIndex = 0;
+    let closestDistance = Infinity;
+    
+    this.flatNavigationList.forEach((item, index) => {
+      let element = null;
+      
+      if (item.type === 'prompt') {
+        element = item.element;
+      } else if (item.type === 'heading') {
+        element = this.findHeadingElement(item.heading);
+      }
+      
+      if (!element || !element.isConnected) return;
+      
+      const rect = element.getBoundingClientRect();
+      const elementCenter = rect.top + rect.height / 2;
+      const distance = Math.abs(elementCenter - viewportCenter);
+      
+      if (distance < closestDistance) {
+        closestDistance = distance;
+        closestIndex = index;
+      }
+    });
+    
+    return closestIndex;
+  }
+
+  /**
+   * Navigate to a specific index in the flat navigation list
+   * Scrolls main chat, highlights in sidebar, and scrolls sidebar to show item
+   */
+  navigateToIndex(index) {
+    if (index < 0 || index >= this.flatNavigationList.length) return;
+    
+    this.navigationIndex = index;
+    const item = this.flatNavigationList[index];
+    
+    let element = null;
+    
+    if (item.type === 'prompt') {
+      element = item.element;
+      
+      // Update active prompt state
+      this.setActivePrompt(item.promptIndex, true);
+      
+      // Clear any heading highlight
+      this.clearHeadingHighlight();
+    } else if (item.type === 'heading') {
+      element = this.findHeadingElement(item.heading);
+      
+      // Expand the prompt's headings if collapsed
+      if (this.collapsedPrompts.has(item.promptIndex)) {
+        this.collapsedPrompts.delete(item.promptIndex);
+        // Rebuild navigation list since collapse state changed
+        this.buildNavigationList();
+        // Find the new index for this heading
+        const newIndex = this.flatNavigationList.findIndex(
+          navItem => navItem.type === 'heading' && 
+                     navItem.promptIndex === item.promptIndex && 
+                     navItem.headingIndex === item.headingIndex
+        );
+        if (newIndex !== -1) {
+          this.navigationIndex = newIndex;
+        }
+        this.render();
+      }
+      
+      // Highlight this heading in sidebar
+      this.highlightHeadingInSidebar(item.promptIndex, item.headingIndex);
+    }
+    
+    // Scroll main chat to the element
+    if (element && element.isConnected) {
+      this.scrollToElement(element);
+    }
+    
+    // Scroll sidebar to show the highlighted item
+    this.scrollSidebarToItem(item);
+  }
+
+  /**
+   * Highlight a heading in the sidebar
+   */
+  highlightHeadingInSidebar(promptIndex, headingIndex) {
+    const promptList = this.shadowRoot?.querySelector('.octogpt-sidebar__prompt-list');
+    if (!promptList) return;
+    
+    // Clear previous highlights
+    this.clearHeadingHighlight();
+    
+    // Clear active prompt
+    const activePrompt = promptList.querySelector('.octogpt-sidebar__prompt-item--active');
+    if (activePrompt) {
+      activePrompt.classList.remove('octogpt-sidebar__prompt-item--active');
+    }
+    this.currentPromptIndex = -1;
+    
+    // Find and highlight the heading
+    const promptGroup = promptList.querySelector(`[data-index="${promptIndex}"]`);
+    if (!promptGroup) return;
+    
+    const headingsContainer = promptGroup.querySelector('.octogpt-sidebar__headings');
+    if (!headingsContainer) return;
+    
+    const headingItems = headingsContainer.querySelectorAll('.octogpt-sidebar__heading-item');
+    if (headingItems[headingIndex]) {
+      headingItems[headingIndex].classList.add('octogpt-sidebar__heading-item--active');
+    }
+  }
+
+  /**
+   * Clear heading highlight
+   */
+  clearHeadingHighlight() {
+    const activeHeading = this.shadowRoot?.querySelector('.octogpt-sidebar__heading-item--active');
+    if (activeHeading) {
+      activeHeading.classList.remove('octogpt-sidebar__heading-item--active');
+    }
+  }
+
+  /**
+   * Scroll the sidebar content to show the currently highlighted item
+   */
+  scrollSidebarToItem(item) {
+    const content = this.shadowRoot?.querySelector('.octogpt-sidebar__content');
+    const promptList = this.shadowRoot?.querySelector('.octogpt-sidebar__prompt-list');
+    if (!content || !promptList) return;
+    
+    let targetElement = null;
+    
+    if (item.type === 'prompt') {
+      const promptGroup = promptList.querySelector(`[data-index="${item.promptIndex}"]`);
+      targetElement = promptGroup?.querySelector('.octogpt-sidebar__prompt-item');
+    } else if (item.type === 'heading') {
+      const promptGroup = promptList.querySelector(`[data-index="${item.promptIndex}"]`);
+      const headingsContainer = promptGroup?.querySelector('.octogpt-sidebar__headings');
+      const headingItems = headingsContainer?.querySelectorAll('.octogpt-sidebar__heading-item');
+      targetElement = headingItems?.[item.headingIndex];
+    }
+    
+    if (!targetElement) return;
+    
+    // Scroll the sidebar content to show the target element
+    const contentRect = content.getBoundingClientRect();
+    const targetRect = targetElement.getBoundingClientRect();
+    
+    // Check if element is outside visible area
+    if (targetRect.top < contentRect.top || targetRect.bottom > contentRect.bottom) {
+      const targetOffsetInContent = content.scrollTop + targetRect.top - contentRect.top;
+      const targetScroll = targetOffsetInContent - (contentRect.height / 2) + (targetRect.height / 2);
+      content.scrollTop = Math.max(0, targetScroll);
+    }
   }
 
   /**
