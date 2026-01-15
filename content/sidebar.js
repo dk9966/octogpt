@@ -1980,7 +1980,7 @@ class OctoGPTSidebar {
    */
   findHeadingElement(heading) {
     if (this.site === 'claude') {
-      // Claude: turnId is like "claude-response-1" where 1 is the data-test-render-count value
+      // Claude: turnId is like "claude-response-{count}" where {count} is the data-test-render-count value
       let container = null;
       
       // Try to extract the render count from turnId (format: "claude-response-{count}")
@@ -1996,10 +1996,10 @@ class OctoGPTSidebar {
       }
       
       if (!container) {
-        // Fallback: find any assistant container with standard-markdown
-        const allContainers = document.querySelectorAll('[data-test-render-count], [data-is-streaming]');
+        // Fallback: find any container with assistant response content (font-claude-response-body)
+        const allContainers = document.querySelectorAll('[data-test-render-count]');
         for (const candidate of allContainers) {
-          if (candidate.querySelector('.standard-markdown')) {
+          if (candidate.querySelector('.font-claude-response-body')) {
             container = candidate;
             break;
           }
@@ -2008,9 +2008,29 @@ class OctoGPTSidebar {
       
       if (!container) return null;
 
-      // Find markdown container - Claude uses standard-markdown class
-      const markdownContainer = container.querySelector('.standard-markdown') || container;
-      const headings = markdownContainer.querySelectorAll(heading.level);
+      // Claude has variable heading rendering - check if it's a standard heading or strong pseudo-heading
+      if (heading.level === 'strong') {
+        // For strong pseudo-headings, find strong tags inside response paragraphs
+        const strongElements = container.querySelectorAll('.font-claude-response-body strong, p strong');
+        const headings = Array.from(strongElements).filter(s => {
+          if (s.closest('[data-testid="user-message"]')) return false;
+          const text = s.textContent.trim();
+          if (!text || text.length > 100) return false;
+          const parent = s.closest('p');
+          if (parent) {
+            const parentText = parent.textContent.trim();
+            return parentText === text || (parentText.startsWith(text) && parentText.length < text.length + 20);
+          }
+          return false;
+        });
+        return headings[heading.index] || null;
+      }
+      
+      // Standard headings (h1-h5) - find those NOT inside user message
+      const allHeadings = container.querySelectorAll(heading.level);
+      const headings = Array.from(allHeadings).filter(h => {
+        return !h.closest('[data-testid="user-message"]');
+      });
       return headings[heading.index] || null;
     } else if (this.site === 'gemini') {
       // Gemini: use conversation container ID
@@ -2137,7 +2157,8 @@ class OctoGPTSidebar {
       }
 
       // Fallback: find scrollable ancestor of any message
-      const message = document.querySelector('[data-testid="user-message"], .standard-markdown');
+      // Claude uses .font-claude-response-body for assistant responses (not .standard-markdown)
+      const message = document.querySelector('[data-testid="user-message"], .font-claude-response-body');
       if (message) {
         let parent = message.parentElement;
         while (parent && parent !== document.body) {

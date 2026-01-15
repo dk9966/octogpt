@@ -728,17 +728,17 @@ class ClaudeParser extends BaseParser {
     constructor() {
         super();
         // Claude's DOM selectors - updated to match actual Claude DOM structure
-        // Note: Claude doesn't use 'human' or 'assistant' class names
+        // Note: Claude doesn't use 'human' or 'assistant' class names or '.standard-markdown'
         this.selectors = {
             conversationContainer: 'main .overflow-y-scroll, main',
             // Claude uses data-testid="user-message" for user messages
             userMessages: '[data-testid="user-message"]',
-            // Claude assistant responses have data-is-streaming attribute or contain standard-markdown
-            assistantMessages: '[data-is-streaming], .standard-markdown',
+            // Claude assistant responses have font-claude-response-body paragraphs
+            // They're identified by having <p class="font-claude-response-body"> elements
+            assistantContent: '.font-claude-response-body',
             // Text content selectors
             userQueryText: '.whitespace-pre-wrap, p',
-            assistantContent: '.standard-markdown',
-            // Message containers - data-test-render-count wraps each turn
+            // Message containers - data-test-render-count wraps each message turn
             messageGroup: '[data-test-render-count]',
         };
     }
@@ -815,8 +815,8 @@ class ClaudeParser extends BaseParser {
      */
     looksLikeUserMessage(element) {
         // Check for assistant-specific indicators
-        // Claude assistant responses have standard-markdown class or data-is-streaming
-        const hasAssistantIndicator = element.querySelector('.standard-markdown') ||
+        // Claude assistant responses have font-claude-response-body class (not standard-markdown)
+        const hasAssistantIndicator = element.querySelector('.font-claude-response-body') ||
                                       element.querySelector('[data-is-streaming]');
         
         if (hasAssistantIndicator) return false;
@@ -891,72 +891,93 @@ class ClaudeParser extends BaseParser {
 
     /**
      * Extract headings from the assistant response following a user message
+     * Claude structure: user message and assistant response are in SEPARATE sibling containers.
+     * Each [data-test-render-count] contains either user OR assistant content, not both.
      */
     extractAssistantHeadings(userElement) {
-        // Claude structure: user and assistant are in sibling containers at the data-test-render-count level
-        // userElement is [data-testid="user-message"] which is deeply nested
-        // We need to find the outer container first, then look at its next sibling
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/355f618a-e6f2-482b-9421-d8db93173052',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'parser.js:extractAssistantHeadings:entry',message:'Called extractAssistantHeadings',data:{userElementTag:userElement?.tagName,userElementTestId:userElement?.getAttribute?.('data-testid')},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'E',runId:'post-fix'})}).catch(()=>{});
+        // #endregion
         
-        // Find the outer container (data-test-render-count wrapper)
-        const userContainer = userElement.closest('[data-test-render-count]') ||
-                              userElement.closest('[data-testid="user-message"]')?.parentElement?.parentElement?.parentElement?.parentElement?.parentElement?.parentElement ||
-                              userElement;
+        // Find the outer container (data-test-render-count wrapper) for the user message
+        const userContainer = userElement.closest('[data-test-render-count]');
         
-        // Find the next sibling that contains the assistant response
-        let nextElement = userContainer.nextElementSibling;
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/355f618a-e6f2-482b-9421-d8db93173052',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'parser.js:extractAssistantHeadings:containerCheck',message:'User container lookup',data:{foundContainer:!!userContainer,containerId:userContainer?.getAttribute?.('data-test-render-count')},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A',runId:'post-fix'})}).catch(()=>{});
+        // #endregion
+        
+        if (!userContainer) {
+            log.info('No user container found for heading extraction');
+            return [];
+        }
+
+        const userContainerId = userContainer.getAttribute('data-test-render-count');
+        
+        // Claude has user and assistant in SEPARATE sibling containers
+        // Look for the next sibling that contains assistant response content
         let assistantContainer = null;
+        let nextElement = userContainer.nextElementSibling;
         
-        // Walk through siblings to find the assistant response
         while (nextElement) {
-            // Claude assistant responses have data-is-streaming attribute or contain standard-markdown
-            const hasStreamingAttr = nextElement.querySelector('[data-is-streaming]');
-            const hasMarkdown = nextElement.querySelector('.standard-markdown');
-            const isAssistant = hasStreamingAttr || hasMarkdown;
+            // Check if this sibling has assistant content (font-claude-response-body paragraphs)
+            const hasAssistantContent = nextElement.querySelector?.(this.selectors.assistantContent);
+            // Or check if it has headings directly
+            const hasHeadings = nextElement.querySelector?.('h1, h2, h3, h4, h5');
             
-            if (isAssistant) {
+            if (hasAssistantContent || hasHeadings) {
                 assistantContainer = nextElement;
                 break;
             }
             
             // If we hit another user message, stop looking
-            const isUser = nextElement.querySelector('[data-testid="user-message"]');
-            if (isUser) break;
+            const hasUserMessage = nextElement.querySelector?.('[data-testid="user-message"]');
+            if (hasUserMessage) break;
             
             nextElement = nextElement.nextElementSibling;
         }
-
+        
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/355f618a-e6f2-482b-9421-d8db93173052',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'parser.js:extractAssistantHeadings:siblingSearch',message:'Sibling search result',data:{foundAssistantContainer:!!assistantContainer,assistantContainerTag:assistantContainer?.tagName,assistantContainerId:assistantContainer?.getAttribute?.('data-test-render-count'),htmlPreview:assistantContainer?.innerHTML?.substring(0,300)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'B',runId:'post-fix'})}).catch(()=>{});
+        // #endregion
+        
         if (!assistantContainer) {
             log.info('No assistant response found for this user message');
             return [];
         }
 
-        return this.extractHeadingsFromElement(assistantContainer);
+        const assistantContainerId = assistantContainer.getAttribute('data-test-render-count') || userContainerId;
+        return this.extractHeadingsFromElement(assistantContainer, assistantContainerId);
     }
 
     /**
      * Extract headings from an assistant response element
+     * Claude has variable heading rendering:
+     * - Sometimes uses standard h1/h2/h3 tags
+     * - Sometimes uses <strong> tags inside paragraphs as pseudo-headings
+     * @param {Element} container - The message container element
+     * @param {string} containerId - The data-test-render-count value for this container
      */
-    extractHeadingsFromElement(container) {
-        // Find the markdown content area - Claude uses standard-markdown class
-        const markdownContainer = container.querySelector('.standard-markdown') || container;
-        
-        // Generate a unique ID for this container
-        // For Claude, we'll use the index of the data-test-render-count container
-        const renderCountContainer = container.closest('[data-test-render-count]') || container;
-        const renderCount = renderCountContainer.getAttribute('data-test-render-count');
-        const containerId = renderCount ? `claude-response-${renderCount}` : 
-                           container.getAttribute('data-testid') ||
-                           `claude-response-${Date.now()}`;
+    extractHeadingsFromElement(container, containerId) {
+        const turnId = containerId ? `claude-response-${containerId}` : 
+                       container.getAttribute('data-test-render-count') ? 
+                       `claude-response-${container.getAttribute('data-test-render-count')}` :
+                       `claude-response-${Date.now()}`;
 
+        // First, try standard HTML heading elements (h1-h5)
         const headingLevels = ['h1', 'h2', 'h3', 'h4', 'h5'];
         
         for (const level of headingLevels) {
-            const headings = markdownContainer.querySelectorAll(level);
+            const allHeadings = container.querySelectorAll(level);
+            const headings = Array.from(allHeadings).filter(h => {
+                // Exclude headings inside user-message element
+                return !h.closest('[data-testid="user-message"]');
+            });
+            
             if (headings.length > 0) {
-                const result = Array.from(headings).map((h, idx) => ({
+                const result = headings.map((h, idx) => ({
                     level: level,
                     text: h.textContent.trim(),
-                    turnId: containerId,
+                    turnId: turnId,
                     index: idx,
                 }));
                 log.info(`Extracted ${level} headings:`, result.map(h => h.text));
@@ -964,8 +985,57 @@ class ClaudeParser extends BaseParser {
             }
         }
 
+        // Fallback: Claude sometimes uses <strong> inside paragraphs as pseudo-headings
+        // Look for <strong> tags that are the only/first child of a paragraph (section headers)
+        const strongHeadings = this.extractStrongHeadings(container, turnId);
+        if (strongHeadings.length > 0) {
+            log.info('Extracted strong pseudo-headings:', strongHeadings.map(h => h.text));
+            return strongHeadings;
+        }
+
         log.info('No headings found');
         return [];
+    }
+
+    /**
+     * Extract <strong> tags that act as section headings in Claude responses
+     * These are typically <strong> elements inside paragraphs with font-claude-response-body class
+     * Only includes <strong> tags that appear to be headings (short, at start of paragraph)
+     */
+    extractStrongHeadings(container, turnId) {
+        // Find strong tags inside response paragraphs
+        const strongElements = container.querySelectorAll('.font-claude-response-body strong, p strong');
+        
+        const headings = [];
+        for (const strong of strongElements) {
+            // Skip if inside user message
+            if (strong.closest('[data-testid="user-message"]')) continue;
+            
+            const text = strong.textContent.trim();
+            // Skip empty or very long text (likely not a heading)
+            if (!text || text.length > 100) continue;
+            
+            // Check if this strong is a heading-like element:
+            // It should be the first significant content in its parent paragraph
+            const parent = strong.closest('p');
+            if (parent) {
+                const parentText = parent.textContent.trim();
+                // If the strong text IS the paragraph (or nearly), it's likely a heading
+                // Also accept if strong is at the very start of the paragraph
+                const isHeadingLike = parentText === text || 
+                                      parentText.startsWith(text) && parentText.length < text.length + 20;
+                if (isHeadingLike) {
+                    headings.push({
+                        level: 'strong',
+                        text: text,
+                        turnId: turnId,
+                        index: headings.length,
+                    });
+                }
+            }
+        }
+        
+        return headings;
     }
 
     /**

@@ -229,10 +229,11 @@ class OctoGPT {
     if (this.site === 'claude') {
       // Claude uses data-testid="user-message" and data-test-render-count for messages
       // Note: [class*="human"] and [class*="assistant"] don't exist in Claude's DOM
+      // Claude uses .font-claude-response-body for assistant response paragraphs (not .standard-markdown)
       return !!(document.querySelector('[data-testid="user-message"]') ||
                 document.querySelector('[data-test-render-count]') ||
                 document.querySelector('[data-is-streaming]') ||
-                document.querySelector('.standard-markdown'));
+                document.querySelector('.font-claude-response-body'));
     } else if (this.site === 'gemini') {
       return !!(document.querySelector('user-query') || 
                 document.querySelector('model-response') ||
@@ -466,7 +467,8 @@ class OctoGPT {
         node.getAttribute('data-testid') === 'user-message';
       const hasRenderCount = node.hasAttribute?.('data-test-render-count');
       const hasStreaming = node.hasAttribute?.('data-is-streaming');
-      const hasMessageContent = node.querySelector?.('.standard-markdown, [data-testid="user-message"], .whitespace-pre-wrap');
+      // Claude uses .font-claude-response-body for assistant response paragraphs (not .standard-markdown)
+      const hasMessageContent = node.querySelector?.('.font-claude-response-body, [data-testid="user-message"], .whitespace-pre-wrap');
       
       return hasUserMessage || hasRenderCount || hasStreaming || hasMessageContent;
     } else if (this.site === 'gemini') {
