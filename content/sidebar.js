@@ -1413,15 +1413,30 @@ class OctoGPTSidebar {
   }
 
   /**
+   * Find the content container to adjust for sidebar layout
+   * Site-specific: Claude uses #main-content, ChatGPT/Gemini use main's parent
+   */
+  findLayoutContainer() {
+    if (this.site === 'claude') {
+      // Claude doesn't have a <main> element - uses #main-content div
+      return document.querySelector('#main-content');
+    }
+    
+    // ChatGPT and Gemini: use main's parent
+    const main = document.querySelector('main');
+    return main?.parentElement;
+  }
+
+  /**
    * Adjust site layout elements to accommodate sidebar
    * Only pushes content when pinned - unpinned mode is overlay-only
    */
   adjustSiteLayout(width, animate = true) {
+    const container = this.findLayoutContainer();
+    
     // Only push content when pinned - unpinned sidebar overlays without affecting layout
     if (!this.isPinned) {
       // Clear any existing margin when unpinned
-      const main = document.querySelector('main');
-      const container = main?.parentElement;
       if (container) {
         container.style.marginRight = '';
         container.style.transition = '';
@@ -1429,10 +1444,6 @@ class OctoGPTSidebar {
       return;
     }
 
-    // Find the outermost content container - the parent of main
-    const main = document.querySelector('main');
-    const container = main?.parentElement;
-    
     if (!container) return;
 
     const transition = animate ? 'margin-right 0.3s ease-in-out' : 'none';
@@ -1525,13 +1536,13 @@ class OctoGPTSidebar {
       this.isNewChat = false; // Loading means not a new chat state
       log.nav(`Loading state: ${state === 'waiting' ? 'Waiting for chat thread' : 'Parsing chat thread'}`);
     } else {
+      // Clear loading flag when state is explicitly set to null
+      this.isLoading = false;
       log.nav('Loading state cleared');
     }
     this.updateLoadingText();
-    // Trigger render to ensure loading state is visible
-    if (state) {
-      this.render();
-    }
+    // Trigger render to update UI
+    this.render();
   }
 
   /**

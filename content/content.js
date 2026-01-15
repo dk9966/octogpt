@@ -227,11 +227,12 @@ class OctoGPT {
    */
   hasConversationContent() {
     if (this.site === 'claude') {
-      // Claude uses data-testid="user-message" and data-test-render-count for messages
-      // Note: [class*="human"] and [class*="assistant"] don't exist in Claude's DOM
-      // Claude uses .font-claude-response-body for assistant response paragraphs (not .standard-markdown)
+      // Claude uses data-testid="user-message" for user messages
+      // Note: [data-test-render-count] containers can exist without actual messages (too broad)
+      // We require actual user messages OR assistant responses to be present
+      // [data-is-streaming] indicates an active response (good indicator of content)
+      // .font-claude-response-body indicates assistant response paragraphs
       return !!(document.querySelector('[data-testid="user-message"]') ||
-                document.querySelector('[data-test-render-count]') ||
                 document.querySelector('[data-is-streaming]') ||
                 document.querySelector('.font-claude-response-body'));
     } else if (this.site === 'gemini') {
@@ -555,7 +556,8 @@ class OctoGPT {
    * Wait for conversation content to appear, then extract
    */
   waitForContentAndExtract() {
-    const maxWait = 2000; // 2 second max - new chats should be detected quickly
+    // Claude's SPA transitions can be slower - use longer timeout
+    const maxWait = this.site === 'claude' ? 4000 : 2000;
     const checkInterval = 100;
     const startTime = Date.now();
 
@@ -592,7 +594,8 @@ class OctoGPT {
    * but no user prompts have been made yet
    */
   waitForPromptsOrNewChat() {
-    const maxWait = 1500; // 1.5 second max to find prompts
+    // Claude's SPA can take longer to populate user messages after containers appear
+    const maxWait = this.site === 'claude' ? 3000 : 1500;
     const checkInterval = 200;
     const startTime = Date.now();
 
