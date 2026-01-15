@@ -2161,8 +2161,8 @@ class OctoGPTSidebar {
    */
   findScrollContainer() {
     if (this.site === 'claude') {
-      // Claude scroll container - uses overflow-y-scroll class
-      const scrollContainer = document.querySelector('main .overflow-y-scroll');
+      // Claude scroll container - uses overflow-y-scroll class inside #main-content
+      const scrollContainer = document.querySelector('#main-content .overflow-y-scroll');
       if (scrollContainer && scrollContainer.scrollHeight > scrollContainer.clientHeight) {
         return scrollContainer;
       }
