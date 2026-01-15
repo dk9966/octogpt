@@ -1509,6 +1509,9 @@ class OctoGPTSidebar {
       this.cancelNewChatDetection();
     }
     
+    // Detect if a new prompt was added (for auto-scroll)
+    const newPromptAdded = newCount > prevCount;
+    
     this.prompts = prompts || [];
     
     // Reset keyboard navigation state so next navigation recalculates from current scroll position
@@ -1516,6 +1519,39 @@ class OctoGPTSidebar {
     this.flatNavigationList = [];
     
     this.render();
+    
+    // Auto-scroll sidebar to the latest prompt when new content is generating
+    if (newPromptAdded && newCount > 0) {
+      this.scrollSidebarToLatestPrompt();
+    }
+  }
+
+  /**
+   * Scroll the sidebar to show the latest (last) prompt
+   * Called when a new prompt is added to keep the generating content visible
+   */
+  scrollSidebarToLatestPrompt() {
+    const content = this.shadowRoot?.querySelector('.octogpt-sidebar__content');
+    const promptList = this.shadowRoot?.querySelector('.octogpt-sidebar__prompt-list');
+    if (!content || !promptList) return;
+    
+    const lastIndex = this.prompts.length - 1;
+    if (lastIndex < 0) return;
+    
+    const lastGroup = promptList.querySelector(`[data-index="${lastIndex}"]`);
+    const targetElement = lastGroup?.querySelector('.octogpt-sidebar__prompt-item');
+    
+    if (!targetElement) return;
+    
+    // Scroll the sidebar content to show the target element at the top
+    const contentRect = content.getBoundingClientRect();
+    const targetRect = targetElement.getBoundingClientRect();
+    
+    // Calculate target scroll position (element near top with some padding)
+    const targetOffsetInContent = content.scrollTop + targetRect.top - contentRect.top;
+    const targetScroll = targetOffsetInContent - 16; // 16px padding from top
+    
+    content.scrollTop = Math.max(0, targetScroll);
   }
 
   /**
