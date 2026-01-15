@@ -912,89 +912,175 @@ class OctoGPTSidebar {
         }
       }
 
-      /* Claude-specific styles (warm dark palette) */
+      /* Claude-specific styles - Light mode (warm cream palette) */
       :host([data-site="claude"]) .octogpt-sidebar__container {
+        background: #FAF9F7;
+        border-left-color: #E8E4DF;
+        color: #3D3929;
+      }
+
+      :host([data-site="claude"]) .octogpt-sidebar__logo-text {
+        color: #3D3929;
+      }
+
+      :host([data-site="claude"]) .octogpt-sidebar__collapse-all-btn,
+      :host([data-site="claude"]) .octogpt-sidebar__pin-btn {
+        color: #6B6459;
+      }
+
+      :host([data-site="claude"]) .octogpt-sidebar__collapse-all-btn:hover,
+      :host([data-site="claude"]) .octogpt-sidebar__pin-btn:hover {
+        background: #F0EDE8;
+        color: #3D3929;
+      }
+
+      :host([data-site="claude"]) .octogpt-sidebar__pin-btn--active {
+        color: #3D3929;
+        background: #E8E4DF;
+      }
+
+      :host([data-site="claude"]) .octogpt-sidebar__prompt-item:hover {
+        background: #F0EDE8;
+      }
+
+      :host([data-site="claude"]) .octogpt-sidebar__prompt-item--active {
+        background: #E8E4DF;
+      }
+
+      :host([data-site="claude"]) .octogpt-sidebar__prompt-text {
+        color: #3D3929;
+      }
+
+      :host([data-site="claude"]) .octogpt-sidebar__content::-webkit-scrollbar-thumb {
+        background: rgba(0, 0, 0, 0.08);
+      }
+
+      :host([data-site="claude"]) .octogpt-sidebar__content::-webkit-scrollbar-thumb:hover {
+        background: rgba(0, 0, 0, 0.15);
+      }
+
+      :host([data-site="claude"]) .octogpt-sidebar__loading-spinner {
+        border-color: #E8E4DF;
+        border-top-color: #3D3929;
+      }
+
+      :host([data-site="claude"]) .octogpt-sidebar__loading-text {
+        color: #6B6459;
+      }
+
+      :host([data-site="claude"]) .octogpt-sidebar__empty {
+        color: #6B6459;
+      }
+
+      :host([data-site="claude"]) .octogpt-sidebar__headings {
+        border-left-color: #E8E4DF;
+      }
+
+      :host([data-site="claude"]) .octogpt-sidebar__heading-item:hover {
+        background: #F0EDE8;
+      }
+
+      :host([data-site="claude"]) .octogpt-sidebar__heading-item--active {
+        background: #E8E4DF;
+      }
+
+      :host([data-site="claude"]) .octogpt-sidebar__heading-text {
+        color: #6B6459;
+      }
+
+      :host([data-site="claude"]) .octogpt-sidebar__heading-item:hover .octogpt-sidebar__heading-text,
+      :host([data-site="claude"]) .octogpt-sidebar__heading-item--active .octogpt-sidebar__heading-text {
+        color: #3D3929;
+      }
+
+      :host([data-site="claude"]) .octogpt-sidebar__resize-handle:hover,
+      :host([data-site="claude"]) .octogpt-sidebar__resize-handle--active {
+        background: rgba(0, 0, 0, 0.08);
+      }
+
+      /* Claude-specific styles - Dark mode (warm dark palette) */
+      :host-context([data-mode="dark"])[data-site="claude"] .octogpt-sidebar__container {
         background: #201F1D;
         border-left-color: #322F2B;
         color: #E8E4DF;
       }
 
-      :host([data-site="claude"]) .octogpt-sidebar__logo-text {
+      :host-context([data-mode="dark"])[data-site="claude"] .octogpt-sidebar__logo-text {
         color: #E8E4DF;
       }
 
-      :host([data-site="claude"]) .octogpt-sidebar__collapse-all-btn,
-      :host([data-site="claude"]) .octogpt-sidebar__pin-btn {
+      :host-context([data-mode="dark"])[data-site="claude"] .octogpt-sidebar__collapse-all-btn,
+      :host-context([data-mode="dark"])[data-site="claude"] .octogpt-sidebar__pin-btn {
         color: #9B9690;
       }
 
-      :host([data-site="claude"]) .octogpt-sidebar__collapse-all-btn:hover,
-      :host([data-site="claude"]) .octogpt-sidebar__pin-btn:hover {
+      :host-context([data-mode="dark"])[data-site="claude"] .octogpt-sidebar__collapse-all-btn:hover,
+      :host-context([data-mode="dark"])[data-site="claude"] .octogpt-sidebar__pin-btn:hover {
         background: #2D2B28;
         color: #E8E4DF;
       }
 
-      :host([data-site="claude"]) .octogpt-sidebar__pin-btn--active {
+      :host-context([data-mode="dark"])[data-site="claude"] .octogpt-sidebar__pin-btn--active {
         color: #E8E4DF;
         background: #3A3734;
       }
 
-      :host([data-site="claude"]) .octogpt-sidebar__prompt-item:hover {
+      :host-context([data-mode="dark"])[data-site="claude"] .octogpt-sidebar__prompt-item:hover {
         background: #2D2B28;
       }
 
-      :host([data-site="claude"]) .octogpt-sidebar__prompt-item--active {
+      :host-context([data-mode="dark"])[data-site="claude"] .octogpt-sidebar__prompt-item--active {
         background: #3A3734;
       }
 
-      :host([data-site="claude"]) .octogpt-sidebar__prompt-text {
+      :host-context([data-mode="dark"])[data-site="claude"] .octogpt-sidebar__prompt-text {
         color: #E8E4DF;
       }
 
-      :host([data-site="claude"]) .octogpt-sidebar__content::-webkit-scrollbar-thumb {
+      :host-context([data-mode="dark"])[data-site="claude"] .octogpt-sidebar__content::-webkit-scrollbar-thumb {
         background: rgba(255, 255, 255, 0.08);
       }
 
-      :host([data-site="claude"]) .octogpt-sidebar__content::-webkit-scrollbar-thumb:hover {
+      :host-context([data-mode="dark"])[data-site="claude"] .octogpt-sidebar__content::-webkit-scrollbar-thumb:hover {
         background: rgba(255, 255, 255, 0.15);
       }
 
-      :host([data-site="claude"]) .octogpt-sidebar__loading-spinner {
+      :host-context([data-mode="dark"])[data-site="claude"] .octogpt-sidebar__loading-spinner {
         border-color: #322F2B;
         border-top-color: #E8E4DF;
       }
 
-      :host([data-site="claude"]) .octogpt-sidebar__loading-text {
+      :host-context([data-mode="dark"])[data-site="claude"] .octogpt-sidebar__loading-text {
         color: #9B9690;
       }
 
-      :host([data-site="claude"]) .octogpt-sidebar__empty {
+      :host-context([data-mode="dark"])[data-site="claude"] .octogpt-sidebar__empty {
         color: #9B9690;
       }
 
-      :host([data-site="claude"]) .octogpt-sidebar__headings {
+      :host-context([data-mode="dark"])[data-site="claude"] .octogpt-sidebar__headings {
         border-left-color: #322F2B;
       }
 
-      :host([data-site="claude"]) .octogpt-sidebar__heading-item:hover {
+      :host-context([data-mode="dark"])[data-site="claude"] .octogpt-sidebar__heading-item:hover {
         background: #2D2B28;
       }
 
-      :host([data-site="claude"]) .octogpt-sidebar__heading-item--active {
+      :host-context([data-mode="dark"])[data-site="claude"] .octogpt-sidebar__heading-item--active {
         background: #3A3734;
       }
 
-      :host([data-site="claude"]) .octogpt-sidebar__heading-text {
+      :host-context([data-mode="dark"])[data-site="claude"] .octogpt-sidebar__heading-text {
         color: #9B9690;
       }
 
-      :host([data-site="claude"]) .octogpt-sidebar__heading-item:hover .octogpt-sidebar__heading-text,
-      :host([data-site="claude"]) .octogpt-sidebar__heading-item--active .octogpt-sidebar__heading-text {
+      :host-context([data-mode="dark"])[data-site="claude"] .octogpt-sidebar__heading-item:hover .octogpt-sidebar__heading-text,
+      :host-context([data-mode="dark"])[data-site="claude"] .octogpt-sidebar__heading-item--active .octogpt-sidebar__heading-text {
         color: #E8E4DF;
       }
 
-      :host([data-site="claude"]) .octogpt-sidebar__resize-handle:hover,
-      :host([data-site="claude"]) .octogpt-sidebar__resize-handle--active {
+      :host-context([data-mode="dark"])[data-site="claude"] .octogpt-sidebar__resize-handle:hover,
+      :host-context([data-mode="dark"])[data-site="claude"] .octogpt-sidebar__resize-handle--active {
         background: rgba(255, 255, 255, 0.08);
       }
     `;
@@ -1913,7 +1999,7 @@ class OctoGPTSidebar {
         // Fallback: find any assistant container with standard-markdown
         const allContainers = document.querySelectorAll('[data-test-render-count], [data-is-streaming]');
         for (const candidate of allContainers) {
-          if (candidate.querySelector('.standard-markdown, [class*="standard-markdown"]')) {
+          if (candidate.querySelector('.standard-markdown')) {
             container = candidate;
             break;
           }
@@ -1922,10 +2008,8 @@ class OctoGPTSidebar {
       
       if (!container) return null;
 
-      // Find markdown container - prioritize standard-markdown
-      const markdownContainer = container.querySelector('.standard-markdown, [class*="standard-markdown"]') ||
-                               container.querySelector('[class*="markdown"], [class*="prose"]') || 
-                               container;
+      // Find markdown container - Claude uses standard-markdown class
+      const markdownContainer = container.querySelector('.standard-markdown') || container;
       const headings = markdownContainer.querySelectorAll(heading.level);
       return headings[heading.index] || null;
     } else if (this.site === 'gemini') {
@@ -2046,22 +2130,14 @@ class OctoGPTSidebar {
    */
   findScrollContainer() {
     if (this.site === 'claude') {
-      // Claude scroll container patterns
-      const selectors = [
-        'main [class*="overflow-y-auto"]',
-        'main [class*="overflow-auto"]',
-        '[class*="conversation"] [class*="overflow"]'
-      ];
-
-      for (const selector of selectors) {
-        const container = document.querySelector(selector);
-        if (container && container.scrollHeight > container.clientHeight) {
-          return container;
-        }
+      // Claude scroll container - uses overflow-y-scroll class
+      const scrollContainer = document.querySelector('main .overflow-y-scroll');
+      if (scrollContainer && scrollContainer.scrollHeight > scrollContainer.clientHeight) {
+        return scrollContainer;
       }
 
       // Fallback: find scrollable ancestor of any message
-      const message = document.querySelector('[class*="human"], [class*="assistant"]');
+      const message = document.querySelector('[data-testid="user-message"], .standard-markdown');
       if (message) {
         let parent = message.parentElement;
         while (parent && parent !== document.body) {

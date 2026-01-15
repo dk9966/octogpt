@@ -108,18 +108,33 @@
     color: #ececec;
 }
 
-/* Claude slab (warm dark palette) */
+/* Claude slab - Light mode (warm cream palette) */
 #octogpt-root[data-site="claude"] .octogpt-slab {
+    background: #FAF9F7;
+    border-color: #E8E4DF;
+    box-shadow: -2px 0 8px rgba(0, 0, 0, 0.08);
+}
+
+#octogpt-root[data-site="claude"] .octogpt-slab__arrow {
+    color: #6B6459;
+}
+
+#octogpt-root[data-site="claude"] .octogpt-slab:hover .octogpt-slab__arrow {
+    color: #3D3929;
+}
+
+/* Claude slab - Dark mode (warm dark palette) */
+[data-mode="dark"] #octogpt-root[data-site="claude"] .octogpt-slab {
     background: #201F1D;
     border-color: #322F2B;
     box-shadow: -2px 0 8px rgba(0, 0, 0, 0.3);
 }
 
-#octogpt-root[data-site="claude"] .octogpt-slab__arrow {
+[data-mode="dark"] #octogpt-root[data-site="claude"] .octogpt-slab__arrow {
     color: #9B9690;
 }
 
-#octogpt-root[data-site="claude"] .octogpt-slab:hover .octogpt-slab__arrow {
+[data-mode="dark"] #octogpt-root[data-site="claude"] .octogpt-slab:hover .octogpt-slab__arrow {
     color: #E8E4DF;
 }
 
@@ -450,81 +465,160 @@ body:has(#octogpt-root) main {
     color: #b4b4b4;
 }
 
-/* Claude settings panel (warm dark palette) */
+/* Claude settings panel - Light mode (warm cream palette) */
 #octogpt-root[data-site="claude"] .octogpt-settings-panel__backdrop {
-    background: rgba(0, 0, 0, 0.6);
+    background: rgba(0, 0, 0, 0.3);
 }
 
 #octogpt-root[data-site="claude"] .octogpt-settings-panel__container {
+    background: #FAF9F7;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+}
+
+#octogpt-root[data-site="claude"] .octogpt-settings-panel__header {
+    border-bottom-color: #E8E4DF;
+}
+
+#octogpt-root[data-site="claude"] .octogpt-settings-panel__title {
+    color: #3D3929;
+}
+
+#octogpt-root[data-site="claude"] .octogpt-settings-panel__close-btn {
+    color: #6B6459;
+}
+
+#octogpt-root[data-site="claude"] .octogpt-settings-panel__close-btn:hover {
+    background: #F0EDE8;
+    color: #3D3929;
+}
+
+#octogpt-root[data-site="claude"] .octogpt-settings-panel__label {
+    color: #3D3929;
+}
+
+#octogpt-root[data-site="claude"] .octogpt-settings-panel__slider {
+    background: #E8E4DF;
+}
+
+#octogpt-root[data-site="claude"] .octogpt-settings-panel__slider::-webkit-slider-thumb {
+    background: #3D3929;
+}
+
+#octogpt-root[data-site="claude"] .octogpt-settings-panel__slider::-webkit-slider-thumb:hover {
+    background: #2A2519;
+}
+
+#octogpt-root[data-site="claude"] .octogpt-settings-panel__slider::-moz-range-thumb {
+    background: #3D3929;
+}
+
+#octogpt-root[data-site="claude"] .octogpt-settings-panel__slider::-moz-range-thumb:hover {
+    background: #2A2519;
+}
+
+#octogpt-root[data-site="claude"] .octogpt-settings-panel__input {
+    background: #F0EDE8;
+    border-color: #E8E4DF;
+    color: #3D3929;
+}
+
+#octogpt-root[data-site="claude"] .octogpt-settings-panel__input:focus {
+    border-color: #6B6459;
+}
+
+#octogpt-root[data-site="claude"] .octogpt-settings-panel__hint {
+    color: #6B6459;
+}
+
+#octogpt-root[data-site="claude"] .octogpt-settings-panel__key {
+    color: #3D3929;
+    background: #F0EDE8;
+    border-color: #E8E4DF;
+}
+
+#octogpt-root[data-site="claude"] .octogpt-settings-panel__key-sep {
+    color: #6B6459;
+}
+
+#octogpt-root[data-site="claude"] .octogpt-settings-panel__shortcut-desc {
+    color: #6B6459;
+}
+
+/* Claude settings panel - Dark mode (warm dark palette) */
+[data-mode="dark"] #octogpt-root[data-site="claude"] .octogpt-settings-panel__backdrop {
+    background: rgba(0, 0, 0, 0.6);
+}
+
+[data-mode="dark"] #octogpt-root[data-site="claude"] .octogpt-settings-panel__container {
     background: #201F1D;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
 }
 
-#octogpt-root[data-site="claude"] .octogpt-settings-panel__header {
+[data-mode="dark"] #octogpt-root[data-site="claude"] .octogpt-settings-panel__header {
     border-bottom-color: #322F2B;
 }
 
-#octogpt-root[data-site="claude"] .octogpt-settings-panel__title {
+[data-mode="dark"] #octogpt-root[data-site="claude"] .octogpt-settings-panel__title {
     color: #E8E4DF;
 }
 
-#octogpt-root[data-site="claude"] .octogpt-settings-panel__close-btn {
+[data-mode="dark"] #octogpt-root[data-site="claude"] .octogpt-settings-panel__close-btn {
     color: #9B9690;
 }
 
-#octogpt-root[data-site="claude"] .octogpt-settings-panel__close-btn:hover {
+[data-mode="dark"] #octogpt-root[data-site="claude"] .octogpt-settings-panel__close-btn:hover {
     background: #2D2B28;
     color: #E8E4DF;
 }
 
-#octogpt-root[data-site="claude"] .octogpt-settings-panel__label {
+[data-mode="dark"] #octogpt-root[data-site="claude"] .octogpt-settings-panel__label {
     color: #E8E4DF;
 }
 
-#octogpt-root[data-site="claude"] .octogpt-settings-panel__slider {
+[data-mode="dark"] #octogpt-root[data-site="claude"] .octogpt-settings-panel__slider {
     background: #322F2B;
 }
 
-#octogpt-root[data-site="claude"] .octogpt-settings-panel__slider::-webkit-slider-thumb {
+[data-mode="dark"] #octogpt-root[data-site="claude"] .octogpt-settings-panel__slider::-webkit-slider-thumb {
     background: #E8E4DF;
 }
 
-#octogpt-root[data-site="claude"] .octogpt-settings-panel__slider::-webkit-slider-thumb:hover {
+[data-mode="dark"] #octogpt-root[data-site="claude"] .octogpt-settings-panel__slider::-webkit-slider-thumb:hover {
     background: #ffffff;
 }
 
-#octogpt-root[data-site="claude"] .octogpt-settings-panel__slider::-moz-range-thumb {
+[data-mode="dark"] #octogpt-root[data-site="claude"] .octogpt-settings-panel__slider::-moz-range-thumb {
     background: #E8E4DF;
 }
 
-#octogpt-root[data-site="claude"] .octogpt-settings-panel__slider::-moz-range-thumb:hover {
+[data-mode="dark"] #octogpt-root[data-site="claude"] .octogpt-settings-panel__slider::-moz-range-thumb:hover {
     background: #ffffff;
 }
 
-#octogpt-root[data-site="claude"] .octogpt-settings-panel__input {
+[data-mode="dark"] #octogpt-root[data-site="claude"] .octogpt-settings-panel__input {
     background: #2D2B28;
     border-color: #322F2B;
     color: #E8E4DF;
 }
 
-#octogpt-root[data-site="claude"] .octogpt-settings-panel__input:focus {
+[data-mode="dark"] #octogpt-root[data-site="claude"] .octogpt-settings-panel__input:focus {
     border-color: #E8E4DF;
 }
 
-#octogpt-root[data-site="claude"] .octogpt-settings-panel__hint {
+[data-mode="dark"] #octogpt-root[data-site="claude"] .octogpt-settings-panel__hint {
     color: #9B9690;
 }
 
-#octogpt-root[data-site="claude"] .octogpt-settings-panel__key {
+[data-mode="dark"] #octogpt-root[data-site="claude"] .octogpt-settings-panel__key {
     color: #E8E4DF;
     background: #2D2B28;
     border-color: #322F2B;
 }
 
-#octogpt-root[data-site="claude"] .octogpt-settings-panel__key-sep {
+[data-mode="dark"] #octogpt-root[data-site="claude"] .octogpt-settings-panel__key-sep {
     color: #9B9690;
 }
 
-#octogpt-root[data-site="claude"] .octogpt-settings-panel__shortcut-desc {
+[data-mode="dark"] #octogpt-root[data-site="claude"] .octogpt-settings-panel__shortcut-desc {
     color: #9B9690;
 }

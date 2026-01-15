@@ -727,18 +727,19 @@ class GeminiParser extends BaseParser {
 class ClaudeParser extends BaseParser {
     constructor() {
         super();
-        // Claude's DOM selectors - these may need updates as Claude changes
-        // Primary selectors based on common patterns
+        // Claude's DOM selectors - updated to match actual Claude DOM structure
+        // Note: Claude doesn't use 'human' or 'assistant' class names
         this.selectors = {
-            conversationContainer: '[class*="conversation"], main',
-            // Claude uses data-testid attributes for message turns
-            userMessages: '[data-testid="user-message"], [data-is-streaming="false"][class*="human"], .human-turn',
-            assistantMessages: '[data-testid="assistant-message"], [data-is-streaming], [class*="assistant"], .assistant-turn',
+            conversationContainer: 'main .overflow-y-scroll, main',
+            // Claude uses data-testid="user-message" for user messages
+            userMessages: '[data-testid="user-message"]',
+            // Claude assistant responses have data-is-streaming attribute or contain standard-markdown
+            assistantMessages: '[data-is-streaming], .standard-markdown',
             // Text content selectors
-            userQueryText: '.whitespace-pre-wrap, [class*="prose"], p',
-            assistantContent: '.standard-markdown, [class*="standard-markdown"], [class*="markdown"], [class*="prose"]',
-            // Message containers
-            messageGroup: '[class*="message-row"], [class*="turn"]',
+            userQueryText: '.whitespace-pre-wrap, p',
+            assistantContent: '.standard-markdown',
+            // Message containers - data-test-render-count wraps each turn
+            messageGroup: '[data-test-render-count]',
         };
     }
 
@@ -782,29 +783,26 @@ class ClaudeParser extends BaseParser {
     findUserMessagesWithFallback() {
         const elements = [];
         
-        // Look for message groups and identify human messages
+        // Look for message groups (data-test-render-count containers)
         const allMessages = document.querySelectorAll(this.selectors.messageGroup);
         
         allMessages.forEach(msg => {
-            // Check various indicators that this is a user/human message
-            const isHuman = msg.querySelector('[class*="human"]') ||
-                           msg.getAttribute('data-testid')?.includes('human') ||
-                           msg.getAttribute('data-testid')?.includes('user') ||
-                           msg.classList.contains('human-turn');
+            // Check if this container has a user message inside
+            const hasUserMessage = msg.querySelector('[data-testid="user-message"]');
             
-            if (isHuman) {
-                elements.push(msg);
+            if (hasUserMessage) {
+                elements.push(hasUserMessage);
             }
         });
         
-        // Additional fallback: look for specific text content patterns
+        // Additional fallback: look for whitespace-pre-wrap elements in user message bubbles
         if (elements.length === 0) {
-            const contentBlocks = document.querySelectorAll('main [class*="whitespace-pre-wrap"]');
+            const contentBlocks = document.querySelectorAll('main .whitespace-pre-wrap');
             contentBlocks.forEach(block => {
                 // Find parent that might be the message container
-                const parent = block.closest('[class*="message"], [class*="turn"]');
+                const parent = block.closest('[data-test-render-count]');
                 if (parent && this.looksLikeUserMessage(parent)) {
-                    elements.push(parent);
+                    elements.push(block);
                 }
             });
         }
@@ -817,9 +815,9 @@ class ClaudeParser extends BaseParser {
      */
     looksLikeUserMessage(element) {
         // Check for assistant-specific indicators
-        const hasAssistantIndicator = element.querySelector('[class*="assistant"]') ||
-                                      element.querySelector('[class*="claude"]') ||
-                                      element.querySelector('svg[class*="logo"]');
+        // Claude assistant responses have standard-markdown class or data-is-streaming
+        const hasAssistantIndicator = element.querySelector('.standard-markdown') ||
+                                      element.querySelector('[data-is-streaming]');
         
         if (hasAssistantIndicator) return false;
         
@@ -899,7 +897,7 @@ class ClaudeParser extends BaseParser {
         // userElement is [data-testid="user-message"] which is deeply nested
         // We need to find the outer container first, then look at its next sibling
         
-        // Find the outer container (data-test-render-count or similar top-level message wrapper)
+        // Find the outer container (data-test-render-count wrapper)
         const userContainer = userElement.closest('[data-test-render-count]') ||
                               userElement.closest('[data-testid="user-message"]')?.parentElement?.parentElement?.parentElement?.parentElement?.parentElement?.parentElement ||
                               userElement;
@@ -912,12 +910,8 @@ class ClaudeParser extends BaseParser {
         while (nextElement) {
             // Claude assistant responses have data-is-streaming attribute or contain standard-markdown
             const hasStreamingAttr = nextElement.querySelector('[data-is-streaming]');
-            const hasMarkdown = nextElement.querySelector('.standard-markdown, [class*="standard-markdown"]');
-            const isAssistant = hasStreamingAttr || 
-                               hasMarkdown ||
-                               nextElement.querySelector('[class*="assistant"]') ||
-                               nextElement.querySelector(this.selectors.assistantMessages) ||
-                               nextElement.getAttribute('data-testid')?.includes('assistant');
+            const hasMarkdown = nextElement.querySelector('.standard-markdown');
+            const isAssistant = hasStreamingAttr || hasMarkdown;
             
             if (isAssistant) {
                 assistantContainer = nextElement;
@@ -925,10 +919,7 @@ class ClaudeParser extends BaseParser {
             }
             
             // If we hit another user message, stop looking
-            const isUser = nextElement.querySelector('[data-testid="user-message"]') ||
-                          nextElement.querySelector('[class*="human"]') ||
-                          nextElement.getAttribute('data-testid')?.includes('user') ||
-                          nextElement.getAttribute('data-testid')?.includes('human');
+            const isUser = nextElement.querySelector('[data-testid="user-message"]');
             if (isUser) break;
             
             nextElement = nextElement.nextElementSibling;
@@ -947,9 +938,7 @@ class ClaudeParser extends BaseParser {
      */
     extractHeadingsFromElement(container) {
         // Find the markdown content area - Claude uses standard-markdown class
-        const markdownContainer = container.querySelector('.standard-markdown, [class*="standard-markdown"]') ||
-                                 container.querySelector(this.selectors.assistantContent) || 
-                                 container;
+        const markdownContainer = container.querySelector('.standard-markdown') || container;
         
         // Generate a unique ID for this container
         // For Claude, we'll use the index of the data-test-render-count container

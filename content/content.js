@@ -102,19 +102,28 @@ class OctoGPT {
       const startTime = Date.now();
 
       const isReady = () => {
+        // Claude does NOT have a <main> element - it uses #main-content div instead
+        // Check for Claude first using early indicators that are always present
+        if (this.site === 'claude') {
+          // Claude-specific early indicators (available immediately on page load)
+          const isClaude = document.documentElement.getAttribute('data-theme') === 'claude' &&
+                          document.body?.classList.contains('chat-ui-core');
+          if (!isClaude) return false;
+          
+          // Check for input container or main content area (appear early)
+          const hasInputContainer = document.querySelector('[data-chat-input-container="true"]');
+          const hasMainContent = document.querySelector('#main-content');
+          const hasInteractiveInput = document.querySelector('[data-testid="chat-input"]');
+          const hasContent = document.querySelector('[data-testid="user-message"]') ||
+                             document.querySelector('[data-test-render-count]');
+          return hasInputContainer || hasMainContent || hasInteractiveInput || hasContent;
+        }
+        
+        // For ChatGPT and Gemini, require main element
         const main = document.querySelector('main');
         if (!main) return false;
 
-        if (this.site === 'claude') {
-          // Claude: check for message elements or input area
-          const hasContent = document.querySelector('[data-testid*="message"]') ||
-                             document.querySelector('[class*="human"]') ||
-                             document.querySelector('[class*="assistant"]');
-          const hasInput = document.querySelector('[contenteditable="true"]') ||
-                          document.querySelector('textarea') ||
-                          document.querySelector('[class*="input"]');
-          return hasContent || hasInput;
-        } else if (this.site === 'gemini') {
+        if (this.site === 'gemini') {
           // Gemini: check for user-query or model-response or input area
           const hasContent = document.querySelector('user-query') ||
                              document.querySelector('model-response') ||
@@ -218,10 +227,12 @@ class OctoGPT {
    */
   hasConversationContent() {
     if (this.site === 'claude') {
-      return !!(document.querySelector('[data-testid*="message"]') ||
-                document.querySelector('[class*="human"]') ||
-                document.querySelector('[class*="assistant"]') ||
-                document.querySelector('[class*="turn"]'));
+      // Claude uses data-testid="user-message" and data-test-render-count for messages
+      // Note: [class*="human"] and [class*="assistant"] don't exist in Claude's DOM
+      return !!(document.querySelector('[data-testid="user-message"]') ||
+                document.querySelector('[data-test-render-count]') ||
+                document.querySelector('[data-is-streaming]') ||
+                document.querySelector('.standard-markdown'));
     } else if (this.site === 'gemini') {
       return !!(document.querySelector('user-query') || 
                 document.querySelector('model-response') ||
@@ -450,17 +461,14 @@ class OctoGPT {
 
     if (this.site === 'claude') {
       // Claude message indicators
-      const hasMessageTestId = node.hasAttribute?.('data-testid') &&
-        (node.getAttribute('data-testid').includes('message') ||
-         node.getAttribute('data-testid').includes('human') ||
-         node.getAttribute('data-testid').includes('assistant'));
-      const hasHumanClass = node.classList?.contains('human-turn') || 
-                           node.className?.includes?.('human');
-      const hasAssistantClass = node.classList?.contains('assistant-turn') || 
-                               node.className?.includes?.('assistant');
-      const hasMessageContent = node.querySelector?.('[class*="markdown"], .whitespace-pre-wrap, [class*="prose"]');
+      // Note: Claude doesn't use 'human' or 'assistant' class names
+      const hasUserMessage = node.hasAttribute?.('data-testid') &&
+        node.getAttribute('data-testid') === 'user-message';
+      const hasRenderCount = node.hasAttribute?.('data-test-render-count');
+      const hasStreaming = node.hasAttribute?.('data-is-streaming');
+      const hasMessageContent = node.querySelector?.('.standard-markdown, [data-testid="user-message"], .whitespace-pre-wrap');
       
-      return hasMessageTestId || hasHumanClass || hasAssistantClass || hasMessageContent;
+      return hasUserMessage || hasRenderCount || hasStreaming || hasMessageContent;
     } else if (this.site === 'gemini') {
       // Gemini message indicators
       const isUserQuery = node.tagName === 'USER-QUERY' || node.querySelector?.('user-query');
