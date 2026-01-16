@@ -166,9 +166,12 @@ class OctoGPT {
     let isNew = false;
 
     if (this.site === 'claude') {
-      // Claude new chat: /new or / (no /chat/ segment with ID)
-      // Existing chat: /chat/abc123...
-      isNew = pathname === '/new' || pathname === '/' || !pathname.startsWith('/chat/');
+      // Claude new chat: /new or / (root with no path)
+      // Existing chat patterns:
+      //   - /chat/abc123... (direct chat)
+      //   - /project/xxx/chat/yyy (project chat)
+      // Use includes('/chat/') to catch both patterns
+      isNew = pathname === '/new' || pathname === '/' || !pathname.includes('/chat/');
     } else if (this.site === 'gemini') {
       // Gemini new chat: /app or /app/ (no ID after)
       // Existing chat: /app/abc123...
@@ -176,7 +179,7 @@ class OctoGPT {
     } else {
       // ChatGPT new chat: / or empty (no /c/ segment)
       // Existing chat: /c/abc123...
-      isNew = pathname === '/' || !pathname.startsWith('/c/');
+      isNew = pathname === '/' || !pathname.includes('/c/');
     }
 
     log.nav(`isNewChatUrl: ${isNew}`);
@@ -189,34 +192,62 @@ class OctoGPT {
   async setup() {
     log.info('Setting up...');
 
+    // Capture initial URL BEFORE any async operations
+    // This lets us detect if URL changed during setup
+    const initialUrl = window.location.href;
+
     // Initialize sidebar
     if (window.OctoGPTSidebar) {
       this.sidebar = new OctoGPTSidebar();
       await this.sidebar.init();
     }
 
-    // Check if this is a new/empty chat based on URL (no chat ID = new chat)
-    if (this.isNewChatUrl()) {
-      log.nav('Initial load: new chat page');
-      if (this.sidebar) {
-        this.sidebar.setNewChat(true);
-      }
-    } else {
-      log.nav('Initial load: existing chat');
-      // URL has a chat ID, extract prompts
-      this.extractAndLog();
-      
-      // If no prompts found yet, wait for them
-      if (this.prompts.length === 0) {
-        this.waitForPromptsOrNewChat();
-      }
-    }
+    // CRITICAL: Setup navigation listener FIRST, before checking initial state
+    // This ensures we catch any navigation that happens during initialization
+    this.setupNavigationListener();
 
     // Setup mutation observer for real-time updates
     this.setupMutationObserver();
 
-    // Listen for URL changes (navigation between conversations)
-    this.setupNavigationListener();
+    // Check if URL changed during sidebar init (race condition protection)
+    const currentUrl = window.location.href;
+    if (currentUrl !== initialUrl) {
+      log.nav(`URL changed during setup: ${initialUrl} → ${currentUrl}`);
+      // URL changed during init - trigger navigation handling
+      // The listener is now active, so manually trigger the handler logic
+      if (this.isNewChatUrl()) {
+        if (this.sidebar) {
+          this.sidebar.setNewChat(true);
+        }
+      } else {
+        if (this.sidebar) {
+          this.sidebar.setNewChat(false);
+          this.sidebar.setLoadingState('waiting');
+        }
+        this.prompts = [];
+        if (this.sidebar) {
+          this.sidebar.updatePrompts([]);
+        }
+        this.waitForContentAndExtract();
+      }
+    } else {
+      // Normal initialization - URL didn't change during setup
+      if (this.isNewChatUrl()) {
+        log.nav('Initial load: new chat page');
+        if (this.sidebar) {
+          this.sidebar.setNewChat(true);
+        }
+      } else {
+        log.nav('Initial load: existing chat');
+        // URL has a chat ID, extract prompts
+        this.extractAndLog();
+        
+        // If no prompts found yet, wait for them
+        if (this.prompts.length === 0) {
+          this.waitForPromptsOrNewChat();
+        }
+      }
+    }
 
     this.isInitialized = true;
     log.info('Initialized successfully');
@@ -226,22 +257,27 @@ class OctoGPT {
    * Check if conversation content exists in DOM
    */
   hasConversationContent() {
+    log.hasConvo('Checking for conversation content...');
     if (this.site === 'claude') {
-      // Claude uses data-testid="user-message" for user messages
-      // Note: [data-test-render-count] containers can exist without actual messages (too broad)
-      // We require actual user messages OR assistant responses to be present
-      // [data-is-streaming] indicates an active response (good indicator of content)
-      // .font-claude-response-body indicates assistant response paragraphs
-      return !!(document.querySelector('[data-testid="user-message"]') ||
-                document.querySelector('[data-is-streaming]') ||
-                document.querySelector('.font-claude-response-body'));
+      const hasConvo = !!(document.querySelector('[data-testid="user-message"]') ||
+                          document.querySelector('[data-is-streaming]') ||
+                          document.querySelector('.font-claude-response-body'));
+      if (hasConvo) log.hasConvo('Claude true');
+      else log.hasConvo('Claude false');
+      return hasConvo;
     } else if (this.site === 'gemini') {
-      return !!(document.querySelector('user-query') || 
-                document.querySelector('model-response') ||
-                document.querySelector('.conversation-container'));
+      const hasConvo = !!(document.querySelector('user-query') || 
+                          document.querySelector('model-response') ||
+                          document.querySelector('.conversation-container'));
+      if (hasConvo) log.hasConvo('Gemini true');
+      else log.hasConvo('Gemini false');
+      return hasConvo;
     } else {
-      return !!(document.querySelector('[data-testid^="conversation-turn-"]') ||
-                document.querySelector('[data-message-author-role]'));
+      const hasConvo = !!(document.querySelector('[data-testid^="conversation-turn-"]') ||
+                          document.querySelector('[data-message-author-role]'));
+      if (hasConvo) log.hasConvo('ChatGPT true');
+      else log.hasConvo('ChatGPT false');
+      return hasConvo;
     }
   }
 
@@ -400,8 +436,13 @@ class OctoGPT {
   setupMutationObserver() {
     log.info('Setting up MutationObserver...');
 
-    // Target the main conversation container
-    const targetNode = document.querySelector('main') || document.body;
+    // Target the main conversation container (Claude uses #main-content, not <main>)
+    let targetNode;
+    if (this.site === 'claude') {
+      targetNode = document.querySelector('#main-content') || document.body;
+    } else {
+      targetNode = document.querySelector('main') || document.body;
+    }
 
     const config = {
       childList: true,
@@ -417,6 +458,13 @@ class OctoGPT {
       if (this.sidebar?.isNewChat && !this.isNewChatUrl()) {
         log.nav('Mutation detected URL change from new chat, showing loading');
         this.sidebar.setNewChat(false);
+        // Clear prompts before polling (for consistency with navigation listener)
+        this.prompts = [];
+        if (this.sidebar) {
+          this.sidebar.updatePrompts([]);
+        }
+        // Start polling for content since navigation listener may not have fired
+        this.waitForContentAndExtract();
       }
 
       let shouldUpdate = false;
@@ -526,6 +574,18 @@ class OctoGPT {
     window.addEventListener('popstate', () => {
       window.dispatchEvent(new Event('locationchange'));
     });
+    
+    // FALLBACK: Poll for URL changes every 500ms as backup detection
+    // Some SPAs (Claude, ChatGPT, Gemini) don't use history.pushState/replaceState,
+    // so we need to poll for URL changes to detect navigation
+    let pollLastUrl = lastUrl;
+    setInterval(() => {
+      const currentUrl = window.location.href;
+      if (currentUrl !== pollLastUrl) {
+        pollLastUrl = currentUrl;
+        window.dispatchEvent(new Event('locationchange'));
+      }
+    }, 500);
 
     window.addEventListener('locationchange', () => {
       const currentUrl = window.location.href;
@@ -545,6 +605,12 @@ class OctoGPT {
           if (this.sidebar) {
             this.sidebar.setNewChat(false);
             this.sidebar.setLoadingState('waiting');
+          }
+          // CRITICAL: Clear old prompts before polling for new content
+          // This ensures we don't stop polling when old content is still in DOM
+          this.prompts = [];
+          if (this.sidebar) {
+            this.sidebar.updatePrompts([]);
           }
           this.waitForContentAndExtract();
         }

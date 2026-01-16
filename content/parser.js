@@ -9,6 +9,7 @@
  */
 const DEBUG = false;
 const DEBUG_NAV = false;
+const DEBUG_HAS_CONVO = false;
 
 const log = {
   info: (...args) => DEBUG && console.log('[OctoGPT]', ...args),
@@ -17,7 +18,8 @@ const log = {
   group: (label) => DEBUG && console.group(label),
   groupEnd: () => DEBUG && console.groupEnd(),
   // Navigation/state tracking - always logs (not gated by DEBUG)
-  nav: (msg) => DEBUG && DEBUG_NAV && console.log('[OctoGPT]', window.location.pathname, '-', msg),
+  nav: (msg) => DEBUG_NAV && console.log('[OctoGPT]', window.location.pathname, '-', msg),
+  hasConvo: (msg) => DEBUG_HAS_CONVO && console.log('[OctoGPT] [hasConvo]', '-', msg),
 };
 
 /**
@@ -895,16 +897,8 @@ class ClaudeParser extends BaseParser {
      * Each [data-test-render-count] contains either user OR assistant content, not both.
      */
     extractAssistantHeadings(userElement) {
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/355f618a-e6f2-482b-9421-d8db93173052',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'parser.js:extractAssistantHeadings:entry',message:'Called extractAssistantHeadings',data:{userElementTag:userElement?.tagName,userElementTestId:userElement?.getAttribute?.('data-testid')},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'E',runId:'post-fix'})}).catch(()=>{});
-        // #endregion
-        
         // Find the outer container (data-test-render-count wrapper) for the user message
         const userContainer = userElement.closest('[data-test-render-count]');
-        
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/355f618a-e6f2-482b-9421-d8db93173052',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'parser.js:extractAssistantHeadings:containerCheck',message:'User container lookup',data:{foundContainer:!!userContainer,containerId:userContainer?.getAttribute?.('data-test-render-count')},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'A',runId:'post-fix'})}).catch(()=>{});
-        // #endregion
         
         if (!userContainer) {
             log.info('No user container found for heading extraction');
@@ -935,10 +929,6 @@ class ClaudeParser extends BaseParser {
             
             nextElement = nextElement.nextElementSibling;
         }
-        
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/355f618a-e6f2-482b-9421-d8db93173052',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'parser.js:extractAssistantHeadings:siblingSearch',message:'Sibling search result',data:{foundAssistantContainer:!!assistantContainer,assistantContainerTag:assistantContainer?.tagName,assistantContainerId:assistantContainer?.getAttribute?.('data-test-render-count'),htmlPreview:assistantContainer?.innerHTML?.substring(0,300)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'B',runId:'post-fix'})}).catch(()=>{});
-        // #endregion
         
         if (!assistantContainer) {
             log.info('No assistant response found for this user message');
